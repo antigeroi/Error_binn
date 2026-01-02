@@ -14,6 +14,8 @@
         .btn{width:100%;padding:14px;border:none;border-radius:8px;font-weight:bold;margin-top:10px}
         .btn-submit{background:red;color:white}
         .btn-cancel{background:transparent;border:1px solid #888;color:#888}
+        .message{background:red;color:white;padding:10px;border-radius:5px;margin-bottom:15px;display:none}
+        .message.success{background:#0f0;color:#000}
     </style>
 </head>
 <body>
@@ -21,6 +23,8 @@
         <a href="index.html" class="back-btn">←</a>
         <h1>Создать пасту</h1>
     </div>
+
+    <div class="message" id="message"></div>
 
     <div class="form-group">
         <label>ЛИКА:</label>
@@ -41,20 +45,68 @@
     <button class="btn btn-cancel" onclick="window.location='index.html'">Отмена</button>
 
     <script>
-        const DB_KEY = 'errorbin_all_users';
+        // НАСТРОЙКИ JSONBIN
+        const BIN_ID = '695858f1ae596e708fc0ffea';
+        const MASTER_KEY = '$2a$10$ftDuSkomUMvmkGtIeeIAMebzWHBRhLWA.xaosW/.pc8G1ys2HPcxG';
+        const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
         
-        function submitPaste() {
+        function showMessage(text, type = 'error') {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = 'message ' + (type === 'success' ? 'success' : '');
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 3000);
+        }
+        
+        // ЗАГРУЗИТЬ БАЗУ
+        async function loadDatabase() {
+            try {
+                const response = await fetch(JSONBIN_URL + '/latest', {
+                    headers: { 'X-Master-Key': MASTER_KEY }
+                });
+                
+                if (!response.ok) throw new Error('Ошибка загрузки');
+                const data = await response.json();
+                return { db: data.record, version: data.metadata.version };
+            } catch (error) {
+                console.error('Ошибка:', error);
+                return { db: { pastes: [], users: [] }, version: null };
+            }
+        }
+        
+        // СОХРАНИТЬ БАЗУ
+        async function saveDatabase(db, version) {
+            try {
+                const response = await fetch(JSONBIN_URL, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': MASTER_KEY,
+                        'X-Bin-Versioning': 'false'
+                    },
+                    body: JSON.stringify(db)
+                });
+                
+                return response.ok;
+            } catch (error) {
+                console.error('Ошибка сохранения:', error);
+                return false;
+            }
+        }
+        
+        // ОТПРАВИТЬ ПАСТУ
+        async function submitPaste() {
             const lika = document.getElementById('lika').value.trim();
             const validation = document.getElementById('validation').value.trim();
             const content = document.getElementById('content').value.trim();
             
-            if(!lika || !validation || !content) {
-                alert('Заполни все поля!');
+            if (!lika || !validation || !content) {
+                showMessage('Заполни все поля!');
                 return;
             }
             
             // ЗАГРУЗИТЬ БАЗУ
-            const db = JSON.parse(localStorage.getItem(DB_KEY) || '{"pastes":[]}');
+            const { db, version } = await loadDatabase();
             
             // ДОБАВИТЬ ПАСТУ
             db.pastes.push({
@@ -62,17 +114,21 @@
                 lika: lika,
                 validation: validation,
                 content: content,
-                author: 'user_' + Date.now().toString().slice(-6),
+                author: 'user_' + Math.random().toString(36).substr(2, 6),
                 status: 'pending',
                 tag: '',
                 date: new Date().toLocaleString()
             });
             
             // СОХРАНИТЬ
-            localStorage.setItem(DB_KEY, JSON.stringify(db));
+            const success = await saveDatabase(db, version);
             
-            alert('Паста отправлена на модерацию!');
-            window.location.href = 'index.html';
+            if (success) {
+                showMessage('Паста отправлена на модерацию!', 'success');
+                setTimeout(() => window.location.href = 'index.html', 1500);
+            } else {
+                showMessage('Ошибка при сохранении пасты!');
+            }
         }
     </script>
 </body>
