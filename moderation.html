@@ -16,6 +16,8 @@
         .approve{background:#0f0;color:black}
         .reject{background:red;color:white}
         .fame-check{margin-top:10px;color:#888;font-size:13px}
+        .no-pastes{text-align:center;padding:50px;color:#888}
+        .refresh-btn{background:#0088cc;color:white;padding:10px 20px;border:none;border-radius:5px;margin-bottom:20px}
     </style>
 </head>
 <body>
@@ -24,12 +26,17 @@
         <h1>Модерация</h1>
     </div>
 
+    <button class="refresh-btn" onclick="loadPendingPastes()">🔄 Обновить</button>
+
     <div id="pendingContainer">
-        <!-- Пасты на модерации -->
+        <div class="no-pastes">Загрузка...</div>
     </div>
 
     <script>
-        const DB_KEY = 'errorbin_all_users';
+        // НАСТРОЙКИ JSONBIN
+        const BIN_ID = '695858f1ae596e708fc0ffea';
+        const MASTER_KEY = '$2a$10$ftDuSkomUMvmkGtIeeIAMebzWHBRhLWA.xaosW/.pc8G1ys2HPcxG';
+        const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
         
         // ПАРОЛЬ АДМИНА
         const ADMIN_PASSWORD = '199221';
@@ -41,60 +48,118 @@
             window.location.href = 'index.html';
         }
         
+        // ЗАГРУЗИТЬ БАЗУ
+        async function loadDatabase() {
+            try {
+                const response = await fetch(JSONBIN_URL + '/latest', {
+                    headers: { 'X-Master-Key': MASTER_KEY }
+                });
+                
+                if (!response.ok) throw new Error('Ошибка загрузки');
+                const data = await response.json();
+                return { db: data.record, version: data.metadata.version };
+            } catch (error) {
+                console.error('Ошибка:', error);
+                return { db: { pastes: [], users: [] }, version: null };
+            }
+        }
+        
+        // СОХРАНИТЬ БАЗУ
+        async function saveDatabase(db, version) {
+            try {
+                const response = await fetch(JSONBIN_URL, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': MASTER_KEY,
+                        'X-Bin-Versioning': 'false'
+                    },
+                    body: JSON.stringify(db)
+                });
+                
+                return response.ok;
+            } catch (error) {
+                console.error('Ошибка сохранения:', error);
+                return false;
+            }
+        }
+        
         // ЗАГРУЗИТЬ ПАСТЫ НА МОДЕРАЦИЮ
-        function loadPendingPastes() {
-            const db = JSON.parse(localStorage.getItem(DB_KEY) || '{"pastes":[]}');
+        async function loadPendingPastes() {
+            const { db, version } = await loadDatabase();
             const pending = db.pastes.filter(p => p.status === 'pending');
             
             const container = document.getElementById('pendingContainer');
-            if(!pending.length) {
-                container.innerHTML = '<div style="text-align:center;padding:50px;color:#888">Нет паст на модерации</div>';
-                return;
+            if (!pending.length) {
+                container.innerHTML = '<div class="no-pastes">Нет паст на модерации</div>';
+                return { db, version };
             }
             
             container.innerHTML = pending.map(p => `
                 <div class="paste-card" id="paste-${p.id}">
                     <div class="paste-lika">${escapeHtml(p.lika)}</div>
                     <div style="color:#888;font-size:12px">by ${escapeHtml(p.author)} • ${p.date}</div>
-                    <div class="paste-preview">${escapeHtml(p.validation.substring(0, 100))}...</div>
+                    <div class="paste-preview">${escapeHtml(p.validation.substring(0, 120))}${p.validation.length > 120 ? '...' : ''}</div>
                     <div class="fame-check">
                         <input type="checkbox" id="fame-${p.id}"> Добавить #фейм
                     </div>
                     <div class="actions">
-                        <button class="btn approve" onclick="approvePaste(${p.id})">Одобрить</button>
-                        <button class="btn reject" onclick="rejectPaste(${p.id})">Отклонить</button>
+                        <button class="btn approve" onclick="approvePaste(${p.id}, ${version})">Одобрить</button>
+                        <button class="btn reject" onclick="rejectPaste(${p.id}, ${version})">Отклонить</button>
                     </div>
                 </div>
             `).join('');
+            
+            return { db, version };
         }
         
         // ОДОБРИТЬ ПАСТУ
-        function approvePaste(id) {
-            const db = JSON.parse(localStorage.getItem(DB_KEY) || '{"pastes":[]}');
-            const paste = db.pastes.find(p => p.id === id);
+        async function approvePaste(id, oldVersion) {
+            const { db, version } = await loadDatabase();
             
-            if(paste) {
+            // ПРОВЕРКА ВЕРСИИ (чтобы не перезаписать чужие изменения)
+            if (version !== oldVersion) {
+                alert('База обновилась! Обнови страницу.');
+                return;
+            }
+            
+            const paste = db.pastes.find(p => p.id === id);
+            if (paste) {
                 paste.status = 'approved';
-                // ДОБАВИТЬ ТЕГ #ФЕЙМ ЕСЛИ ВЫБРАНО
-                if(document.getElementById(`fame-${id}`).checked) {
+                if (document.getElementById(`fame-${id}`).checked) {
                     paste.tag = '#фейм';
                 }
-                localStorage.setItem(DB_KEY, JSON.stringify(db));
-                document.getElementById(`paste-${id}`).remove();
-                alert('Паста одобрена!');
+                
+                const success = await saveDatabase(db, version);
+                if (success) {
+                    alert('Паста одобрена!');
+                    await loadPendingPastes();
+                } else {
+                    alert('Ошибка при сохранении!');
+                }
             }
         }
         
         // ОТКЛОНИТЬ ПАСТУ
-        function rejectPaste(id) {
-            const db = JSON.parse(localStorage.getItem(DB_KEY) || '{"pastes":[]}');
-            const paste = db.pastes.find(p => p.id === id);
+        async function rejectPaste(id, oldVersion) {
+            const { db, version } = await loadDatabase();
             
-            if(paste) {
+            if (version !== oldVersion) {
+                alert('База обновилась! Обнови страницу.');
+                return;
+            }
+            
+            const paste = db.pastes.find(p => p.id === id);
+            if (paste) {
                 paste.status = 'rejected';
-                localStorage.setItem(DB_KEY, JSON.stringify(db));
-                document.getElementById(`paste-${id}`).remove();
-                alert('Паста отклонена!');
+                
+                const success = await saveDatabase(db, version);
+                if (success) {
+                    alert('Паста отклонена!');
+                    await loadPendingPastes();
+                } else {
+                    alert('Ошибка при сохранении!');
+                }
             }
         }
         
@@ -104,6 +169,7 @@
             return div.innerHTML;
         }
         
+        // ЗАПУСК
         loadPendingPastes();
     </script>
 </body>
