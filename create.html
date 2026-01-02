@@ -1,138 +1,79 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
+    <title>Создать пасту</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Создать пасту - errorbin</title>
     <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{background:#000;color:#fff;font-family:Arial}
-        .header{background:#111;padding:12px 15px;border-bottom:2px solid red;display:flex;align-items:center}
-        .back-btn{background:none;border:none;color:#fff;font-size:18px;margin-right:10px}
-        .header h1{color:red;font-size:17px}
-        .create-container{padding:15px}
-        .form-group{margin-bottom:20px}
-        label{display:block;color:#0f0;font-weight:bold;margin-bottom:8px;font-size:14px}
-        input,textarea{width:100%;padding:12px 15px;background:#222;border:1px solid #333;border-radius:8px;color:#fff;font-size:14px}
-        textarea{min-height:120px;resize:vertical}
-        small{color:#888;font-size:12px;display:block;margin-top:5px}
-        .btn{width:100%;padding:14px;border:none;border-radius:8px;font-size:16px;font-weight:bold;margin-bottom:10px}
-        .btn-create{background:red;color:white}
-        .btn-cancel{background:transparent;color:#888;border:1px solid #888}
-        .message{background:red;color:white;padding:10px;border-radius:5px;margin-bottom:15px;text-align:center;display:none}
-        .message.success{background:#0f0;color:#000}
+        body{background:#1a1a1a;color:white;font-family:Arial;padding:20px}
+        .header{display:flex;align-items:center;margin-bottom:20px}
+        .back-btn{color:white;text-decoration:none;font-size:20px;margin-right:10px}
+        h1{color:red;margin:0}
+        .form-group{margin-bottom:15px}
+        input,textarea{width:100%;padding:12px;background:#3a3a3a;border:1px solid #4a4a4a;border-radius:8px;color:white;margin-top:5px}
+        textarea{min-height:100px;resize:vertical}
+        .btn{width:100%;padding:14px;border:none;border-radius:8px;font-weight:bold;margin-top:10px}
+        .btn-submit{background:red;color:white}
+        .btn-cancel{background:transparent;border:1px solid #888;color:#888}
     </style>
 </head>
 <body>
     <div class="header">
-        <button class="back-btn" onclick="window.history.back()">←</button>
+        <a href="index.html" class="back-btn">←</a>
         <h1>Создать пасту</h1>
     </div>
 
-    <div class="create-container">
-        <div class="message" id="message"></div>
-        
-        <form id="createForm">
-            <div class="form-group">
-                <label for="lika">ЛИКА (кто сделал):</label>
-                <input type="text" id="lika" placeholder="Введите лику" required maxlength="100">
-                <small>Максимум 100 символов</small>
-            </div>
-
-            <div class="form-group">
-                <label for="validation">ЦЕПОЧКА ВАЛИДАЦИИ:</label>
-                <textarea id="validation" placeholder="Опишите источник или приложите скриншот" required maxlength="500"></textarea>
-                <small>Максимум 500 символов</small>
-            </div>
-
-            <div class="form-group">
-                <label for="content">ПАСТА (информация):</label>
-                <textarea id="content" placeholder="Введите полную информацию" required></textarea>
-                <small>Неограниченный текст</small>
-            </div>
-
-            <button type="submit" class="btn btn-create">Создать пасту</button>
-            <button type="button" class="btn btn-cancel" onclick="window.history.back()">Отмена</button>
-        </form>
+    <div class="form-group">
+        <label>ЛИКА:</label>
+        <input type="text" id="lika" placeholder="Кто сделал" maxlength="100">
     </div>
 
+    <div class="form-group">
+        <label>ВАЛИДАЦИЯ:</label>
+        <textarea id="validation" placeholder="Цепочка валидации" maxlength="500"></textarea>
+    </div>
+
+    <div class="form-group">
+        <label>ПАСТА:</label>
+        <textarea id="content" placeholder="Информация"></textarea>
+    </div>
+
+    <button class="btn btn-submit" onclick="submitPaste()">Создать пасту</button>
+    <button class="btn btn-cancel" onclick="window.location='index.html'">Отмена</button>
+
     <script>
-        const DB_KEY = 'errorbin_global_db';
+        const DB_KEY = 'errorbin_all_users';
         
-        // Проверка авторизации
-        function checkAuth() {
-            const user = JSON.parse(localStorage.getItem('current_user'));
-            if (!user) {
-                window.location.href = 'login.html';
-                return null;
-            }
-            return user;
-        }
-        
-        function showMessage(text, type = 'error') {
-            const msg = document.getElementById('message');
-            msg.textContent = text;
-            msg.className = 'message ' + (type === 'success' ? 'success' : '');
-            msg.style.display = 'block';
-            setTimeout(() => msg.style.display = 'none', 3000);
-        }
-        
-        function getDB() {
-            return JSON.parse(localStorage.getItem(DB_KEY));
-        }
-        
-        function saveDB(db) {
-            localStorage.setItem(DB_KEY, JSON.stringify(db));
-        }
-        
-        // Обработка формы
-        document.getElementById('createForm').onsubmit = (e) => {
-            e.preventDefault();
-            
-            const user = checkAuth();
-            if (!user) return;
-            
+        function submitPaste() {
             const lika = document.getElementById('lika').value.trim();
             const validation = document.getElementById('validation').value.trim();
             const content = document.getElementById('content').value.trim();
             
-            if (!lika || !validation || !content) {
-                showMessage('Заполните все поля');
+            if(!lika || !validation || !content) {
+                alert('Заполни все поля!');
                 return;
             }
             
-            const db = getDB();
+            // ЗАГРУЗИТЬ БАЗУ
+            const db = JSON.parse(localStorage.getItem(DB_KEY) || '{"pastes":[]}');
             
-            // Создание пасты
-            const newPaste = {
-                id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+            // ДОБАВИТЬ ПАСТУ
+            db.pastes.push({
+                id: Date.now(),
                 lika: lika,
                 validation: validation,
                 content: content,
-                author: user.username,
+                author: 'user_' + Date.now().toString().slice(-6),
+                status: 'pending',
                 tag: '',
-                status: user.isAdmin ? 'approved' : 'pending',
-                createdAt: new Date().toISOString()
-            };
+                date: new Date().toLocaleString()
+            });
             
-            db.pastes.push(newPaste);
-            saveDB(db);
+            // СОХРАНИТЬ
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
             
-            const msg = user.isAdmin 
-                ? 'Паста создана и опубликована!' 
-                : 'Паста создана и отправлена на модерацию!';
-                
-            showMessage(msg, 'success');
-            
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1500);
-        };
-        
-        // Проверка при загрузке
-        document.addEventListener('DOMContentLoaded', () => {
-            checkAuth();
-        });
+            alert('Паста отправлена на модерацию!');
+            window.location.href = 'index.html';
+        }
     </script>
 </body>
 </html>
