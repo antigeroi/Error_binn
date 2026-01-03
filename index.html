@@ -26,26 +26,9 @@
         .modal-label { color: #888; font-size: 14px; margin-bottom: 5px; }
         .modal-text { background: #111; padding: 15px; border-radius: 5px; white-space: pre-wrap; word-break: break-word; }
         .copy-btn { background: #0088cc; color: white; border: none; padding: 8px 15px; border-radius: 5px; margin-top: 10px; cursor: pointer; }
-        .login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; }
-        .login-box { background: #222; padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; border: 2px solid red; text-align: center; }
-        .login-title { color: red; margin-bottom: 20px; }
-        .login-input { width: 100%; padding: 15px; background: #333; border: 1px solid #444; border-radius: 8px; color: white; text-align: center; font-size: 18px; margin-bottom: 15px; }
-        .login-btn { width: 100%; padding: 15px; background: red; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; }
-        .login-error { color: red; margin-top: 10px; display: none; }
     </style>
 </head>
 <body>
-
-<div id="loginScreen" class="login-screen">
-    <div class="login-box">
-        <h1 class="login-title">🔒 ERRORBIN</h1>
-        <input type="password" class="login-input" id="passwordInput" placeholder="Введите пароль доступа" autocomplete="off">
-        <button class="login-btn" onclick="checkPassword()">ВОЙТИ</button>
-        <div class="login-error" id="loginError">❌ Неверный пароль!</div>
-    </div>
-</div>
-
-<div id="mainScreen" style="display: none;">
     <div class="header">
         <h1>ErrorBin</h1>
         <a href="moderation.html" class="admin-btn">Админ</a>
@@ -80,58 +63,45 @@
             </div>
         </div>
     </div>
-</div>
 
 <script>
-// 🛡️ МАТЕМАТИЧЕСКОЕ ШИФРОВАНИЕ КЛЮЧЕЙ
+// 🛡️ ЗАШИФРОВАННЫЕ КЛЮЧИ (математическое кодирование)
 function getConfig() {
-    // Ключи разбиты на части и закодированы математически
-    const parts = {
-        a: [54, 57, 53, 56, 55, 57, 102, 50, 97, 101, 53, 57, 54, 101, 55, 48, 56, 102, 99, 49, 51, 102, 53, 55],
-        b: [36, 50, 97, 36, 49, 48, 36, 108, 77, 51, 119, 72, 87, 102, 53, 111, 104, 69, 49, 99, 74, 48, 75, 47, 116, 110, 48, 55, 101, 86, 117, 106, 55, 87, 56, 48, 90, 108, 106, 120, 100, 119, 74, 85, 97, 78, 68, 47, 99, 66, 79, 81, 100, 75, 75, 120, 112, 116, 86, 67],
-        c: [49, 50, 50, 51, 51, 49]
-    };
+    // BIN_ID: 695879f2ae596e708fc13f57
+    const binParts = [
+        54, 57, 53, 56, 55, 57, 102, 50, 97, 101, 
+        53, 57, 54, 101, 55, 48, 56, 102, 99, 49, 
+        51, 102, 53, 55
+    ];
     
-    // Конвертируем обратно в строку
+    // MASTER_KEY: $2a$10$lM3wHWf5ohE1cJ0K/tn07eVuj7W80ZljxdwJUaND/cBOQdKKxptVC
+    const keyParts = [
+        36, 50, 97, 36, 49, 48, 36, 108, 77, 51, 
+        119, 72, 87, 102, 53, 111, 104, 69, 49, 99, 
+        74, 48, 75, 47, 116, 110, 48, 55, 101, 86, 
+        117, 106, 55, 87, 56, 48, 90, 108, 106, 120, 
+        100, 119, 74, 85, 97, 78, 68, 47, 99, 66, 
+        79, 81, 100, 75, 75, 120, 112, 116, 86, 67
+    ];
+    
+    // ADMIN_PASS: 122331
+    const passParts = [49, 50, 50, 51, 51, 49];
+    
     return {
-        BIN_ID: String.fromCharCode(...parts.a),
-        MASTER_KEY: String.fromCharCode(...parts.b),
-        ADMIN_PASS: String.fromCharCode(...parts.c)
+        BIN_ID: String.fromCharCode(...binParts),
+        MASTER_KEY: String.fromCharCode(...keyParts),
+        ADMIN_PASS: String.fromCharCode(...passParts)
     };
 }
 
-let CONFIG = null;
+const CONFIG = getConfig();
 
-// 🔐 ПРОВЕРКА ПАРОЛЯ
-function checkPassword() {
-    const password = document.getElementById('passwordInput').value;
-    const errorElem = document.getElementById('loginError');
-    
-    // Пароль вычисляется из имени сайта
-    const siteName = "errorbin";
-    const expectedPassword = siteName.split('').map(c => 
-        String.fromCharCode(c.charCodeAt(0) + 3)
-    ).join('');
-    
-    if (password === "122331" || password === "error" || password === expectedPassword) {
-        CONFIG = getConfig();
-        localStorage.setItem('eb_auth', '1');
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('mainScreen').style.display = 'block';
-        loadPastes();
-    } else {
-        errorElem.style.display = 'block';
-        document.getElementById('passwordInput').value = '';
-    }
-}
-
-// 📥 ЗАГРУЗИТЬ ПАСТЫ (ИСПРАВЛЕННЫЙ URL)
+// 📥 ЗАГРУЗИТЬ ПАСТЫ
 async function loadPastes() {
     try {
         const container = document.getElementById('pastesContainer');
         container.innerHTML = '<div class="no-pastes">🔄 Загрузка паст...</div>';
         
-        // ИСПРАВЛЕННЫЙ URL - без /latest
         const response = await fetch(
             `https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`,
             { 
@@ -144,7 +114,7 @@ async function loadPastes() {
         
         if (!response.ok) {
             if (response.status === 404) {
-                throw new Error('BIN не найден! Проверь BIN_ID');
+                throw new Error('BIN не найден!');
             }
             throw new Error(`Ошибка ${response.status}`);
         }
@@ -280,22 +250,6 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// АВТО-ВХОД
-window.addEventListener('DOMContentLoaded', () => {
-    const auth = localStorage.getItem('eb_auth');
-    if (auth) {
-        CONFIG = getConfig();
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('mainScreen').style.display = 'block';
-        loadPastes();
-    }
-});
-
-// ENTER ДЛЯ ВХОДА
-document.getElementById('passwordInput').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') checkPassword();
-});
-
 // ЗАКРЫТИЕ МОДАЛКИ
 window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeModal();
@@ -304,6 +258,9 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal')) closeModal();
 });
+
+// 🚀 ЗАПУСК
+loadPastes();
 </script>
 </body>
 </html>
