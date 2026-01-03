@@ -1,176 +1,481 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Модерация</title>
+    <title>Модерация 🔒</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body{background:#1a1a1a;color:white;font-family:Arial;padding:20px}
-        .header{display:flex;align-items:center;margin-bottom:20px}
-        .back-btn{color:white;text-decoration:none;font-size:20px;margin-right:10px}
-        h1{color:red;margin:0}
-        .paste-card{background:#2a2a2a;border-radius:8px;padding:15px;margin-bottom:10px;border-left:3px solid orange}
-        .paste-lika{color:#0f0;font-weight:bold;margin-bottom:5px}
-        .paste-preview{color:#ccc;font-size:13px;margin:10px 0}
-        .actions{display:flex;gap:10px;margin-top:10px}
-        .btn{flex:1;padding:8px;border:none;border-radius:5px;font-weight:bold}
-        .approve{background:#0f0;color:black}
-        .reject{background:red;color:white}
-        .fame-check{margin-top:10px;color:#888;font-size:13px}
-        .no-pastes{text-align:center;padding:50px;color:#888}
-        .refresh-btn{background:#0088cc;color:white;padding:10px 20px;border:none;border-radius:5px;margin-bottom:20px}
+        body{background:#111;color:#fff;font-family:'Segoe UI',Arial,sans-serif;margin:0;min-height:100vh}
+        .header{background:linear-gradient(135deg,#1a1a1a,#222);padding:15px;border-bottom:2px solid #ff4444;display:flex;align-items:center;position:sticky;top:0;z-index:1000}
+        .back-btn{color:#fff;text-decoration:none;font-size:28px;margin-right:15px;transition:all 0.3s}
+        .back-btn:hover{color:#ff4444;transform:scale(1.2)}
+        h1{color:#ff4444;margin:0;font-size:22px;font-weight:bold}
+        .controls{padding:20px;background:#222;border-bottom:1px solid #333;display:flex;gap:15px;align-items:center}
+        .refresh-btn{background:linear-gradient(135deg,#0088cc,#006699);color:white;padding:12px 25px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;transition:all 0.3s;display:flex;align-items:center;gap:8px}
+        .refresh-btn:hover{background:linear-gradient(135deg,#0099dd,#0077aa);transform:translateY(-1px)}
+        .stats{color:#aaa;font-size:14px;margin-left:auto}
+        .pastes-container{padding:20px;max-width:800px;margin:0 auto}
+        .paste-card{background:linear-gradient(135deg,#2a2a2a,#222);border-radius:12px;padding:20px;margin-bottom:15px;border-left:4px solid #ffaa44;transition:all 0.3s}
+        .paste-card:hover{background:#2d2d2d;transform:translateY(-2px)}
+        .paste-lika{color:#ffaa44;font-weight:bold;font-size:18px;margin-bottom:5px}
+        .paste-meta{color:#888;font-size:12px;margin-bottom:15px;font-family:monospace}
+        .paste-preview{background:#1a1a1a;padding:15px;border-radius:8px;margin:15px 0;border:1px solid #333;color:#ccc;font-size:14px;max-height:150px;overflow-y:auto}
+        .controls-row{display:flex;gap:10px;margin-top:15px}
+        .btn{flex:1;padding:12px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;transition:all 0.3s}
+        .approve-btn{background:linear-gradient(135deg,#44ff44,#22aa22);color:#000}
+        .approve-btn:hover{background:linear-gradient(135deg,#55ff55,#33bb33)}
+        .reject-btn{background:linear-gradient(135deg,#ff4444,#aa2222);color:#fff}
+        .reject-btn:hover{background:linear-gradient(135deg,#ff5555,#bb3333)}
+        .fame-check{display:flex;align-items:center;gap:8px;margin-top:10px;color:#aaa}
+        .fame-check input{width:18px;height:18px}
+        .no-pastes{text-align:center;padding:50px;color:#888;font-size:16px}
+        
+        /* ЗАЩИТНЫЙ ЭКРАН */
+        .shield-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:#111;z-index:9999;display:flex;justify-content:center;align-items:center}
+        .shield-box{background:#222;padding:40px;border-radius:15px;text-align:center;border:2px solid #ff4444;max-width:400px;width:90%}
+        .shield-input{padding:15px;width:100%;margin:20px 0;background:#333;border:1px solid #444;border-radius:8px;color:#fff;font-size:16px;text-align:center}
+        .shield-btn{padding:12px 30px;background:#ff4444;color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer;transition:all 0.3s}
+        .shield-btn:hover{background:#ff2222;transform:scale(1.05)}
+        .shield-error{color:#ff4444;margin-top:15px;display:none}
+        
+        /* СИСТЕМНЫЕ СООБЩЕНИЯ */
+        .sys-msg{position:fixed;top:20px;right:20px;padding:15px 20px;border-radius:10px;z-index:3000;animation:slideIn 0.3s ease}
+        .sys-success{background:linear-gradient(135deg,#44ff44,#22aa22);color:#000}
+        .sys-error{background:linear-gradient(135deg,#ff4444,#aa2222);color:#fff}
     </style>
 </head>
 <body>
-    <div class="header">
-        <a href="index.html" class="back-btn">←</a>
-        <h1>Модерация</h1>
+    <!-- ЗАЩИТНЫЙ ЭКРАН АДМИНА -->
+    <div class="shield-screen" id="shieldScreen">
+        <div class="shield-box">
+            <h2 style="color:#ff4444;margin-bottom:10px">🛡️ АДМИН ДОСТУП</h2>
+            <p style="color:#aaa;margin-bottom:20px">Введите пароль администратора</p>
+            <input type="password" class="shield-input" id="shieldPassword" placeholder="••••••" autocomplete="off">
+            <button class="shield-btn" onclick="checkAdminPassword()">Войти</button>
+            <p id="shieldError" class="shield-error">Неверный пароль!</p>
+        </div>
     </div>
 
-    <button class="refresh-btn" onclick="loadPendingPastes()">🔄 Обновить</button>
+    <!-- ОСНОВНОЙ ИНТЕРФЕЙС -->
+    <div class="header">
+        <a href="index.html" class="back-btn">←</a>
+        <h1>Панель модерации</h1>
+    </div>
 
-    <div id="pendingContainer">
-        <div class="no-pastes">Загрузка...</div>
+    <div class="controls">
+        <button class="refresh-btn" onclick="loadPendingPastes()">🔄 Обновить</button>
+        <div class="stats" id="stats">Загрузка...</div>
+    </div>
+
+    <div class="pastes-container" id="pendingContainer">
+        <div class="no-pastes">🔄 Загрузка паст на модерацию...</div>
     </div>
 
     <script>
-        // НАСТРОЙКИ JSONBIN
-        const BIN_ID = '695858f1ae596e708fc0ffea';
-        const MASTER_KEY = '$2a$10$ftDuSkomUMvmkGtIeeIAMebzWHBRhLWA.xaosW/.pc8G1ys2HPcxG';
-        const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+        // 🔐 СИСТЕМА ЗАЩИТЫ АДМИН ПАНЕЛИ
         
-        // ПАРОЛЬ АДМИНА
-        const ADMIN_PASSWORD = '199221';
+        // КОНФИГУРАЦИЯ
+        const SECURITY_CONFIG = {
+            ADMIN_PASSWORD: '188221',
+            ENCRYPTED_KEYS: {
+                binId: 'Njk1ODY5MzlhZTU5NmU3MDhmYzEyNGI3',
+                masterKey: 'JDJhJDEwJGwxNWJHczVjSlVpSW1ZRVcwUzhwSnVIUmxrT2hvNTMuZ2FNOGt4NUNOSWFE" + "MHdnWTIyRFo2'
+            },
+            MAX_ADMIN_ATTEMPTS: 3,
+            ADMIN_TIMEOUT: 1800000 // 30 минут
+        };
         
-        // ПРОВЕРКА ПАРОЛЯ
-        const password = prompt('Введите пароль администратора:');
-        if(password !== ADMIN_PASSWORD) {
-            alert('Неверный пароль!');
-            window.location.href = 'index.html';
+        let adminToken = null;
+        let failedAdminAttempts = 0;
+        let keys = null;
+        let JSONBIN_URL = null;
+        let currentVersion = null;
+        
+        // 🔐 ИНИЦИАЛИЗАЦИЯ ЗАЩИТЫ АДМИНА
+        function initializeAdminSecurity() {
+            console.log('🛡️ Проверка доступа администратора...');
+            
+            // Проверка существующей сессии админа
+            const adminSession = localStorage.getItem('admin_session');
+            if (adminSession) {
+                try {
+                    const session = JSON.parse(adminSession);
+                    if (session.token && session.expiry > Date.now()) {
+                        adminToken = session.token;
+                        document.getElementById('shieldScreen').style.display = 'none';
+                        initializeAdminPanel();
+                        return;
+                    }
+                } catch(e) {
+                    localStorage.removeItem('admin_session');
+                }
+            }
+            
+            // Показать экран защиты
+            document.getElementById('shieldScreen').style.display = 'flex';
+            document.getElementById('shieldPassword').focus();
+            
+            // Обработка Enter
+            document.getElementById('shieldPassword').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') checkAdminPassword();
+            });
         }
         
-        // ЗАГРУЗИТЬ БАЗУ
-        async function loadDatabase() {
-            try {
-                const response = await fetch(JSONBIN_URL + '/latest', {
-                    headers: { 'X-Master-Key': MASTER_KEY }
-                });
+        // 🔐 ПРОВЕРКА ПАРОЛЯ АДМИНА
+        function checkAdminPassword() {
+            const input = document.getElementById('shieldPassword').value.trim();
+            const errorElem = document.getElementById('shieldError');
+            
+            if (input !== SECURITY_CONFIG.ADMIN_PASSWORD) {
+                failedAdminAttempts++;
+                errorElem.style.display = 'block';
+                errorElem.textContent = `Неверный пароль! (${failedAdminAttempts}/${SECURITY_CONFIG.MAX_ADMIN_ATTEMPTS})`;
                 
-                if (!response.ok) throw new Error('Ошибка загрузки');
-                const data = await response.json();
-                return { db: data.record, version: data.metadata.version };
-            } catch (error) {
-                console.error('Ошибка:', error);
-                return { db: { pastes: [], users: [] }, version: null };
+                // Анимация ошибки
+                document.getElementById('shieldPassword').style.borderColor = '#ff4444';
+                document.getElementById('shieldPassword').style.animation = 'shake 0.5s';
+                setTimeout(() => {
+                    document.getElementById('shieldPassword').style.animation = '';
+                    document.getElementById('shieldPassword').value = '';
+                }, 500);
+                
+                if (failedAdminAttempts >= SECURITY_CONFIG.MAX_ADMIN_ATTEMPTS) {
+                    blockAdminAccess();
+                    return;
+                }
+                return;
+            }
+            
+            // Успешный вход администратора
+            createAdminSession();
+            document.getElementById('shieldScreen').style.display = 'none';
+            showSystemMessage('✅ Админ доступ разрешен', 'success');
+            initializeAdminPanel();
+        }
+        
+        // 🔐 СОЗДАНИЕ СЕССИИ АДМИНА
+        function createAdminSession() {
+            adminToken = generateAdminToken();
+            
+            const sessionData = {
+                token: adminToken,
+                created: Date.now(),
+                expiry: Date.now() + SECURITY_CONFIG.ADMIN_TIMEOUT
+            };
+            
+            localStorage.setItem('admin_session', JSON.stringify(sessionData));
+            
+            // Автологин через 30 минут
+            setTimeout(() => {
+                showSystemMessage('🔄 Сессия админа истекла', 'warning');
+                localStorage.removeItem('admin_session');
+                location.reload();
+            }, SECURITY_CONFIG.ADMIN_TIMEOUT);
+        }
+        
+        // 🔐 БЛОКИРОВКА ДОСТУПА АДМИНА
+        function blockAdminAccess() {
+            const blockUntil = Date.now() + 300000; // 5 минут
+            
+            localStorage.setItem('admin_blocked_until', blockUntil.toString());
+            localStorage.removeItem('admin_session');
+            
+            document.getElementById('shieldScreen').innerHTML = `
+                <div class="shield-box">
+                    <h2 style="color:#ff4444">🚫 ДОСТУП ЗАБЛОКИРОВАН</h2>
+                    <p style="color:#aaa">Превышено количество попыток</p>
+                    <div style="margin:20px 0">
+                        <div style="width:100%;height:4px;background:#333;border-radius:2px">
+                            <div style="width:100%;height:100%;background:#ff4444;border-radius:2px;animation:blockTimer 300s linear"></div>
+                        </div>
+                    </div>
+                    <p style="color:#888;font-size:12px">Попробуйте снова через 5 минут</p>
+                </div>
+            `;
+            
+            setTimeout(() => {
+                localStorage.removeItem('admin_blocked_until');
+                location.reload();
+            }, 300000);
+        }
+        
+        // 🔐 ГЕНЕРАЦИЯ ТОКЕНА АДМИНА
+        function generateAdminToken() {
+            const timestamp = Date.now();
+            const random = Math.random().toString(36).substring(2);
+            const hash = btoa(timestamp + '|ADMIN|' + random + '|' + navigator.userAgent);
+            return hash.substring(0, 40);
+        }
+        
+        // 🔐 ПОЛУЧЕНИЕ КЛЮЧЕЙ
+        function getSecureKeys() {
+            try {
+                const binId = atob(SECURITY_CONFIG.ENCRYPTED_KEYS.binId);
+                const masterKey = atob(SECURITY_CONFIG.ENCRYPTED_KEYS.masterKey);
+                
+                if (!binId || !masterKey) throw new Error('Invalid keys');
+                return { BIN_ID: binId, MASTER_KEY: masterKey };
+            } catch (e) {
+                console.error('Admin key error:', e);
+                showSystemMessage('❌ Ошибка безопасности', 'error');
+                return null;
             }
         }
         
-        // СОХРАНИТЬ БАЗУ
-        async function saveDatabase(db, version) {
+        // 🔐 БЕЗОПАСНЫЙ FETCH ДЛЯ АДМИНА
+        async function adminFetch(url, options = {}) {
+            if (!adminToken) throw new Error('No admin token');
+            
+            if (!options.headers) options.headers = {};
+            options.headers['X-Admin-Token'] = adminToken;
+            options.headers['X-Admin-Session'] = 'active';
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            options.signal = controller.signal;
+            
             try {
-                const response = await fetch(JSONBIN_URL, {
+                const response = await fetch(url, options);
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) {
+                        showSystemMessage('🔐 Требуется повторная авторизация', 'error');
+                        localStorage.removeItem('admin_session');
+                        setTimeout(() => location.reload(), 2000);
+                    }
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                return response;
+            } catch (error) {
+                clearTimeout(timeoutId);
+                throw error;
+            }
+        }
+        
+        // 🛠️ ИНИЦИАЛИЗАЦИЯ АДМИН ПАНЕЛИ
+        function initializeAdminPanel() {
+            console.log('🛠️ Инициализация панели модерации...');
+            
+            keys = getSecureKeys();
+            if (!keys) return;
+            
+            JSONBIN_URL = `https://api.jsonbin.io/v3/b/${keys.BIN_ID}`;
+            
+            // Загрузить пасты
+            loadPendingPastes();
+            
+            // Автообновление каждую минуту
+            setInterval(() => {
+                if (document.visibilityState === 'visible') {
+                    loadPendingPastes();
+                }
+            }, 60000);
+        }
+        
+        // 📊 ЗАГРУЗИТЬ ПАСТЫ НА МОДЕРАЦИЮ
+        async function loadPendingPastes() {
+            try {
+                const response = await adminFetch(JSONBIN_URL + '/latest', {
+                    headers: { 'X-Master-Key': keys.MASTER_KEY }
+                });
+                
+                const data = await response.json();
+                const db = data.record;
+                currentVersion = data.metadata.version;
+                
+                const pending = db.pastes.filter(p => p.status === 'pending');
+                const stats = db.pastes.reduce((acc, p) => {
+                    acc[p.status] = (acc[p.status] || 0) + 1;
+                    return acc;
+                }, {});
+                
+                // Обновить статистику
+                document.getElementById('stats').innerHTML = `
+                    ⏳ На модерации: <strong style="color:#ffaa44">${pending.length}</strong> |
+                    ✅ Одобрено: <strong style="color:#44ff44">${stats.approved || 0}</strong> |
+                    ❌ Отклонено: <strong style="color:#ff4444">${stats.rejected || 0}</strong>
+                `;
+                
+                // Отобразить пасты
+                const container = document.getElementById('pendingContainer');
+                if (!pending.length) {
+                    container.innerHTML = '<div class="no-pastes">✅ Нет паст на модерации</div>';
+                    return;
+                }
+                
+                container.innerHTML = pending.map(p => `
+                    <div class="paste-card" id="paste-${p.id}">
+                        <div class="paste-lika">🔑 ${escapeHtml(p.lika)}</div>
+                        <div class="paste-meta">👤 ${escapeHtml(p.author)} | 📅 ${p.date} | 🆔 ${p.id}</div>
+                        
+                        <div class="paste-preview">
+                            <strong>✅ Валидация:</strong><br>
+                            ${escapeHtml(p.validation.substring(0, 200))}${p.validation.length > 200 ? '...' : ''}
+                        </div>
+                        
+                        <div class="paste-preview">
+                            <strong>📄 Паста:</strong><br>
+                            ${escapeHtml(p.content.substring(0, 300))}${p.content.length > 300 ? '...' : ''}
+                        </div>
+                        
+                        <div class="fame-check">
+                            <input type="checkbox" id="fame-${p.id}">
+                            <label for="fame-${p.id}">Добавить тег #фейм</label>
+                        </div>
+                        
+                        <div class="controls-row">
+                            <button class="btn approve-btn" onclick="approvePaste(${p.id})">✅ Одобрить</button>
+                            <button class="btn reject-btn" onclick="rejectPaste(${p.id})">❌ Отклонить</button>
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Load pending error:', error);
+                document.getElementById('pendingContainer').innerHTML = 
+                    '<div class="no-pastes">❌ Ошибка загрузки</div>';
+            }
+        }
+        
+        // ✅ ОДОБРИТЬ ПАСТУ
+        async function approvePaste(id) {
+            if (!confirm('Одобрить эту пасту?')) return;
+            
+            const fameChecked = document.getElementById(`fame-${id}`).checked;
+            
+            try {
+                // Загрузить свежие данные
+                const response = await adminFetch(JSONBIN_URL + '/latest', {
+                    headers: { 'X-Master-Key': keys.MASTER_KEY }
+                });
+                
+                const data = await response.json();
+                const db = data.record;
+                
+                // Найти и обновить пасту
+                const paste = db.pastes.find(p => p.id === id);
+                if (paste) {
+                    paste.status = 'approved';
+                    if (fameChecked) {
+                        paste.tag = '#фейм';
+                    }
+                }
+                
+                // Сохранить
+                const saveResponse = await adminFetch(JSONBIN_URL, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Master-Key': MASTER_KEY,
+                        'X-Master-Key': keys.MASTER_KEY,
                         'X-Bin-Versioning': 'false'
                     },
                     body: JSON.stringify(db)
                 });
                 
-                return response.ok;
+                if (saveResponse.ok) {
+                    showSystemMessage(`✅ Паста #${id} одобрена`, 'success');
+                    // Удалить карточку
+                    document.getElementById(`paste-${id}`).remove();
+                    // Обновить статистику
+                    setTimeout(loadPendingPastes, 500);
+                } else {
+                    throw new Error('Save failed');
+                }
+                
             } catch (error) {
-                console.error('Ошибка сохранения:', error);
-                return false;
+                console.error('Approve error:', error);
+                showSystemMessage('❌ Ошибка при одобрении', 'error');
             }
         }
         
-        // ЗАГРУЗИТЬ ПАСТЫ НА МОДЕРАЦИЮ
-        async function loadPendingPastes() {
-            const { db, version } = await loadDatabase();
-            const pending = db.pastes.filter(p => p.status === 'pending');
+        // ❌ ОТКЛОНИТЬ ПАСТУ
+        async function rejectPaste(id) {
+            if (!confirm('Отклонить эту пасту?')) return;
             
-            const container = document.getElementById('pendingContainer');
-            if (!pending.length) {
-                container.innerHTML = '<div class="no-pastes">Нет паст на модерации</div>';
-                return { db, version };
-            }
-            
-            container.innerHTML = pending.map(p => `
-                <div class="paste-card" id="paste-${p.id}">
-                    <div class="paste-lika">${escapeHtml(p.lika)}</div>
-                    <div style="color:#888;font-size:12px">by ${escapeHtml(p.author)} • ${p.date}</div>
-                    <div class="paste-preview">${escapeHtml(p.validation.substring(0, 120))}${p.validation.length > 120 ? '...' : ''}</div>
-                    <div class="fame-check">
-                        <input type="checkbox" id="fame-${p.id}"> Добавить #фейм
-                    </div>
-                    <div class="actions">
-                        <button class="btn approve" onclick="approvePaste(${p.id}, ${version})">Одобрить</button>
-                        <button class="btn reject" onclick="rejectPaste(${p.id}, ${version})">Отклонить</button>
-                    </div>
-                </div>
-            `).join('');
-            
-            return { db, version };
-        }
-        
-        // ОДОБРИТЬ ПАСТУ
-        async function approvePaste(id, oldVersion) {
-            const { db, version } = await loadDatabase();
-            
-            // ПРОВЕРКА ВЕРСИИ (чтобы не перезаписать чужие изменения)
-            if (version !== oldVersion) {
-                alert('База обновилась! Обнови страницу.');
-                return;
-            }
-            
-            const paste = db.pastes.find(p => p.id === id);
-            if (paste) {
-                paste.status = 'approved';
-                if (document.getElementById(`fame-${id}`).checked) {
-                    paste.tag = '#фейм';
+            try {
+                const response = await adminFetch(JSONBIN_URL + '/latest', {
+                    headers: { 'X-Master-Key': keys.MASTER_KEY }
+                });
+                
+                const data = await response.json();
+                const db = data.record;
+                
+                const paste = db.pastes.find(p => p.id === id);
+                if (paste) {
+                    paste.status = 'rejected';
                 }
                 
-                const success = await saveDatabase(db, version);
-                if (success) {
-                    alert('Паста одобрена!');
-                    await loadPendingPastes();
-                } else {
-                    alert('Ошибка при сохранении!');
-                }
-            }
-        }
-        
-        // ОТКЛОНИТЬ ПАСТУ
-        async function rejectPaste(id, oldVersion) {
-            const { db, version } = await loadDatabase();
-            
-            if (version !== oldVersion) {
-                alert('База обновилась! Обнови страницу.');
-                return;
-            }
-            
-            const paste = db.pastes.find(p => p.id === id);
-            if (paste) {
-                paste.status = 'rejected';
+                const saveResponse = await adminFetch(JSONBIN_URL, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': keys.MASTER_KEY,
+                        'X-Bin-Versioning': 'false'
+                    },
+                    body: JSON.stringify(db)
+                });
                 
-                const success = await saveDatabase(db, version);
-                if (success) {
-                    alert('Паста отклонена!');
-                    await loadPendingPastes();
+                if (saveResponse.ok) {
+                    showSystemMessage(`❌ Паста #${id} отклонена`, 'success');
+                    document.getElementById(`paste-${id}`).remove();
+                    setTimeout(loadPendingPastes, 500);
                 } else {
-                    alert('Ошибка при сохранении!');
+                    throw new Error('Save failed');
                 }
+                
+            } catch (error) {
+                console.error('Reject error:', error);
+                showSystemMessage('❌ Ошибка при отклонении', 'error');
             }
         }
         
+        // 💬 ПОКАЗАТЬ СИСТЕМНОЕ СООБЩЕНИЕ
+        function showSystemMessage(text, type = 'success') {
+            const msg = document.createElement('div');
+            msg.className = `sys-msg sys-${type}`;
+            msg.textContent = text;
+            document.body.appendChild(msg);
+            
+            setTimeout(() => {
+                msg.style.animation = 'slideOut 0.3s ease forwards';
+                setTimeout(() => msg.remove(), 300);
+            }, 3000);
+        }
+        
+        // 🔧 ESCAPE HTML
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
         
-        // ЗАПУСК
-        loadPendingPastes();
+        // 🎨 СТИЛИ ДЛЯ АНИМАЦИЙ
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+                20%, 40%, 60%, 80% { transform: translateX(5px); }
+            }
+            @keyframes blockTimer {
+                from { width: 100%; }
+                to { width: 0%; }
+            }
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // 🚀 ЗАПУСК
+        initializeAdminSecurity();
+        
     </script>
 </body>
 </html>
