@@ -47,28 +47,20 @@
     <button class="btn btn-cancel" onclick="window.location='index.html'">❌ ОТМЕНА</button>
 
 <script>
-// 🛡️ ЗАШИФРОВАННЫЕ КЛЮЧИ
-const ENCODED = {
-    a: "Njk1ODc5ZjJhZTU5NmU3MDhmYzEzZjU3",
-    b: "JDJhJDEwJGxNM25IV2Y1b2hFM1RwZXlyek9QWGVMZ1gzd3V2blFDT1AyRHpKakNQdFlwQlh0cmFmN3dD",
-    c: "MTIyMzMx"
+// 🗝️ ЗАШИФРОВАННЫЕ КЛЮЧИ
+const SECRET = {
+    id: "Njk1ODc5ZjJhZTU5NmU3MDhmYzEzZjU3",
+    key: "JDJhJDEwJGxNM25IV2Y1b2hFM1RwZXlyek9QWGVMZ1gzd3V2blFDT1AyRHpKakNQdFlwQlh0cmFmN3dD",
+    pass: "MTIyMzMx"
 };
 
-// 🔓 РАСШИФРОВКА
+// 🔓 ПОЛУЧИТЬ КЛЮЧИ
 function getKeys() {
-    try {
-        return {
-            BIN_ID: atob(ENCODED.a),
-            MASTER_KEY: atob(ENCODED.b),
-            ADMIN_PASS: atob(ENCODED.c)
-        };
-    } catch(e) {
-        return {
-            BIN_ID: "695879f2ae596e708fc13f57",
-            MASTER_KEY: "$2a$10$lM3wHWf5ohE1cJ0K/tn07eVuj7W80ZljxdwJUaND/cBOQdKKxptVC",
-            ADMIN_PASS: "122331"
-        };
-    }
+    return {
+        BIN_ID: atob(SECRET.id),
+        MASTER_KEY: atob(SECRET.key),
+        ADMIN_PASS: atob(SECRET.pass)
+    };
 }
 
 const CONFIG = getKeys();
@@ -97,7 +89,7 @@ function setupCharCounters() {
     });
 }
 
-// 📨 ОТПРАВИТЬ ПАСТУ (ИСПРАВЛЕННАЯ ВЕРСИЯ)
+// 📨 ОТПРАВИТЬ ПАСТУ
 async function submitPaste() {
     const lika = document.getElementById('lika').value.trim();
     const validation = document.getElementById('validation').value.trim();
@@ -108,55 +100,34 @@ async function submitPaste() {
         return;
     }
     
-    if (lika.length > 100) {
-        showMessage('❌ ЛИКА не больше 100 символов!');
-        return;
-    }
-    
-    if (validation.length > 500) {
-        showMessage('❌ Валидация не больше 500 символов!');
-        return;
-    }
-    
     const btn = document.querySelector('.btn-submit');
-    const originalText = btn.textContent;
     btn.textContent = '🔄 Отправка...';
     btn.disabled = true;
     
     try {
-        // 1. ЗАГРУЗКА ТЕКУЩИХ ДАННЫХ
-        const response = await fetch(
-            `https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`,
-            { 
-                headers: { 
-                    'X-Master-Key': CONFIG.MASTER_KEY,
-                    'X-Bin-Versioning': 'false'
-                } 
-            }
-        );
+        // 1. ЗАГРУЗИТЬ ТЕКУЩУЮ БАЗУ
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`, {
+            headers: { 'X-Master-Key': CONFIG.MASTER_KEY }
+        });
         
-        if (!response.ok) {
-            throw new Error(`Ошибка загрузки: ${response.status}`);
-        }
+        if (!response.ok) throw new Error('Ошибка загрузки базы');
         
         const data = await response.json();
         const db = data.record;
         
-        // 2. ДОБАВЛЕНИЕ НОВОЙ ПАСТЫ
-        const newPaste = {
+        // 2. ДОБАВИТЬ НОВУЮ ПАСТУ
+        db.pastes.push({
             id: Date.now(),
             lika: lika,
             validation: validation,
             content: content,
-            author: 'user_' + Math.random().toString(36).substr(2, 8),
+            author: 'user_' + Math.random().toString(36).slice(2, 10),
             status: 'pending',
             tag: '',
             date: new Date().toLocaleString('ru-RU')
-        };
+        });
         
-        db.pastes.push(newPaste);
-        
-        // 3. СОХРАНЕНИЕ
+        // 3. СОХРАНИТЬ ОБРАТНО
         const saveResponse = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`, {
             method: 'PUT',
             headers: {
@@ -170,28 +141,20 @@ async function submitPaste() {
         if (saveResponse.ok) {
             showMessage('✅ Паста отправлена на модерацию!', 'success');
             
-            // ОЧИСТКА ФОРМЫ
+            // ОЧИСТИТЬ ФОРМУ
             document.getElementById('lika').value = '';
             document.getElementById('validation').value = '';
             document.getElementById('content').value = '';
-            document.getElementById('likaCount').textContent = '0/100';
-            document.getElementById('validationCount').textContent = '0/500';
-            document.getElementById('contentCount').textContent = '0/2000';
             
-            // ВОЗВРАТ НА ГЛАВНУЮ ЧЕРЕЗ 2 СЕКУНДЫ
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 2000);
-            
+            // ВЕРНУТЬСЯ НА ГЛАВНУЮ
+            setTimeout(() => window.location.href = 'index.html', 2000);
         } else {
-            const errorData = await saveResponse.json();
-            throw new Error(`Ошибка сохранения: ${errorData.message || saveResponse.status}`);
+            throw new Error('Ошибка сохранения');
         }
         
     } catch (error) {
-        console.error('Ошибка отправки:', error);
-        showMessage(`❌ Ошибка: ${error.message}`);
-        btn.textContent = originalText;
+        showMessage('❌ Ошибка: ' + error.message);
+        btn.textContent = '✅ ОТПРАВИТЬ';
         btn.disabled = false;
     }
 }
