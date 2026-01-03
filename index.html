@@ -65,19 +65,19 @@
     </div>
 
 <script>
-// 🗝️ ТВОИ КЛЮЧИ (зашифрованы)
-const KEYS = {
-    bin: "Njk1OTFhMjJhZTU5NmU3MDhmYzI0MjIz",
-    master: "JDJhJDEwJGcwVGR4ZFNYVy9IaDlUVWcyRzRoWmV0cGl5Y3pTSFdXSkN5WHF3Yzh5bENZLms1cFVzbVUy",
-    admin: "MTIyMzMx"
+// 🗝️ ЗАШИФРОВАННЫЕ КЛЮЧИ (base64)
+const SECRET_KEYS = {
+    id: "Njk1OTFmNGZkMGVhODgxZjQwNTFiYjJj", // 69591f4fd0ea881f4051bb2c
+    key: "JDJhJDEwJGcwVGR4ZFNYVy9IaDlUVWcyRzRoWmV0cGl5Y3pTSFdXSkN5WHF3Yzh5bENZLms1cFVzbVUy", // $2a$10$g0TdxdSYW/Hh9TUg2G4hZetpiyczSHWWJCyXqwc8ylCY.k5pUsmU2
+    pass: "MTIyMzMx" // 122331
 };
 
-// 🔓 РАСШИФРОВКА
+// 🔓 РАСШИФРОВКА КЛЮЧЕЙ
 function getConfig() {
     return {
-        BIN_ID: atob(KEYS.bin),
-        MASTER_KEY: atob(KEYS.master),
-        ADMIN_PASS: atob(KEYS.admin)
+        BIN_ID: atob(SECRET_KEYS.id),
+        MASTER_KEY: atob(SECRET_KEYS.key),
+        ADMIN_PASS: atob(SECRET_KEYS.pass)
     };
 }
 
@@ -90,16 +90,21 @@ async function loadPastes() {
             headers: { 'X-Master-Key': CONFIG.MASTER_KEY }
         });
         
-        if (!response.ok) throw new Error('Ошибка загрузки');
+        if (!response.ok) {
+            throw new Error('Ошибка загрузки: ' + response.status);
+        }
         
         const data = await response.json();
+        console.log('Данные загружены:', data);
+        
         const approved = data.record.pastes.filter(p => p.status === 'approved');
         
         displayPastes(approved);
         
     } catch (error) {
+        console.error('Ошибка:', error);
         document.getElementById('pastesContainer').innerHTML = 
-            '<div class="no-pastes" style="color:red">❌ Ошибка загрузки</div>';
+            `<div class="no-pastes" style="color:red">❌ ${error.message}</div>`;
     }
 }
 
