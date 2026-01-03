@@ -11,12 +11,26 @@
         .search-box{padding:15px;background:#2a2a2a}
         .search-input{width:100%;padding:10px;background:#3a3a3a;border:1px solid #4a4a4a;border-radius:20px;color:white}
         .pastes-container{padding:15px}
-        .paste-card{background:#2a2a2a;border-radius:8px;padding:12px;margin-bottom:10px;border-left:3px solid #0f0}
+        .paste-card{background:#2a2a2a;border-radius:8px;padding:12px;margin-bottom:10px;border-left:3px solid #0f0;cursor:pointer}
+        .paste-card:hover{background:#333}
         .paste-lika{color:#0f0;font-weight:bold}
         .paste-author{color:#888;font-size:12px}
-        .fab{position:fixed;bottom:20px;right:20px;width:50px;height:50px;background:white;border-radius:25px;display:flex;align-items:center;justify-content:center;color:red;font-size:24px}
+        .fab{position:fixed;bottom:20px;right:20px;width:50px;height:50px;background:white;border-radius:25px;display:flex;align-items:center;justify-content:center;color:red;font-size:24px;cursor:pointer}
         .no-pastes{text-align:center;padding:50px;color:#888}
         .paste-tag{background:red;color:white;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:5px}
+        
+        /* МОДАЛЬНОЕ ОКНО ДЛЯ ПРОСМОТРА ПАСТЫ */
+        .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:1000;overflow-y:auto}
+        .modal-content{background:#2a2a2a;margin:50px auto;padding:20px;border-radius:10px;width:90%;max-width:600px}
+        .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid #444;padding-bottom:10px}
+        .modal-title{color:#0f0;font-size:18px;margin:0}
+        .close-modal{color:white;font-size:28px;cursor:pointer;background:none;border:none}
+        .modal-section{margin-bottom:20px}
+        .modal-label{color:#888;font-size:14px;margin-bottom:5px}
+        .modal-text{background:#1a1a1a;padding:15px;border-radius:8px;white-space:pre-wrap;word-break:break-word}
+        .modal-footer{color:#888;font-size:12px;margin-top:20px;border-top:1px solid #444;padding-top:10px;display:flex;justify-content:space-between}
+        .copy-btn{background:#0088cc;color:white;border:none;padding:8px 15px;border-radius:5px;cursor:pointer;margin-top:10px}
+        .copy-btn:hover{background:#0077bb}
     </style>
 </head>
 <body>
@@ -34,6 +48,38 @@
     </div>
 
     <div class="fab" onclick="window.location='create.html'">+</div>
+
+    <!-- МОДАЛЬНОЕ ОКНО ДЛЯ ПРОСМОТРА ПАСТЫ -->
+    <div class="modal" id="pasteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle"></div>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            
+            <div class="modal-section">
+                <div class="modal-label">ЛИКА:</div>
+                <div class="modal-text" id="modalLika"></div>
+            </div>
+            
+            <div class="modal-section">
+                <div class="modal-label">ВАЛИДАЦИЯ:</div>
+                <div class="modal-text" id="modalValidation"></div>
+                <button class="copy-btn" onclick="copyToClipboard('validation')">Копировать валидацию</button>
+            </div>
+            
+            <div class="modal-section">
+                <div class="modal-label">ПАСТА:</div>
+                <div class="modal-text" id="modalContent"></div>
+                <button class="copy-btn" onclick="copyToClipboard('content')">Копировать пасту</button>
+            </div>
+            
+            <div class="modal-footer">
+                <div id="modalAuthor"></div>
+                <div id="modalDate"></div>
+            </div>
+        </div>
+    </div>
 
     <script>
         // НАСТРОЙКИ JSONBIN
@@ -86,14 +132,76 @@
             }
             
             container.innerHTML = approved.map(p => `
-                <div class="paste-card">
+                <div class="paste-card" onclick="showFullPaste(${p.id})">
                     <div class="paste-lika">
                         ${escapeHtml(p.lika)}
                         ${p.tag ? `<span class="paste-tag">${p.tag}</span>` : ''}
                     </div>
-                    <div class="paste-author">by ${escapeHtml(p.author)}</div>
+                    <div class="paste-author">by ${escapeHtml(p.author)} • ${p.date}</div>
                 </div>
             `).join('');
+        }
+        
+        // ПОКАЗАТЬ ПОЛНУЮ ИНФОРМАЦИЮ О ПАСТЕ
+        async function showFullPaste(pasteId) {
+            const db = await loadDatabase();
+            const paste = db.pastes.find(p => p.id === pasteId);
+            
+            if (!paste) {
+                showMessage('Паста не найдена');
+                return;
+            }
+            
+            // ЗАПОЛНЯЕМ МОДАЛЬНОЕ ОКНО
+            document.getElementById('modalTitle').textContent = 'Паста #' + pasteId;
+            document.getElementById('modalLika').textContent = paste.lika;
+            document.getElementById('modalValidation').textContent = paste.validation;
+            document.getElementById('modalContent').textContent = paste.content;
+            document.getElementById('modalAuthor').textContent = 'by ' + paste.author;
+            document.getElementById('modalDate').textContent = paste.date;
+            
+            // ПОКАЗЫВАЕМ МОДАЛЬНОЕ ОКНО
+            document.getElementById('pasteModal').style.display = 'block';
+            
+            // СОХРАНЯЕМ ID ТЕКУЩЕЙ ПАСТЫ В DATA-АТРИБУТ
+            document.getElementById('pasteModal').dataset.currentPasteId = pasteId;
+        }
+        
+        // ЗАКРЫТЬ МОДАЛЬНОЕ ОКНО
+        function closeModal() {
+            document.getElementById('pasteModal').style.display = 'none';
+        }
+        
+        // КОПИРОВАТЬ ТЕКСТ В БУФЕР ОБМЕНА
+        async function copyToClipboard(type) {
+            const pasteId = document.getElementById('pasteModal').dataset.currentPasteId;
+            if (!pasteId) return;
+            
+            const db = await loadDatabase();
+            const paste = db.pastes.find(p => p.id === parseInt(pasteId));
+            
+            if (!paste) return;
+            
+            let textToCopy = '';
+            if (type === 'validation') {
+                textToCopy = paste.validation;
+            } else if (type === 'content') {
+                textToCopy = paste.content;
+            }
+            
+            try {
+                await navigator.clipboard.writeText(textToCopy);
+                showMessage('Скопировано в буфер обмена!', 'success');
+            } catch (err) {
+                // Fallback для старых браузеров
+                const textArea = document.createElement('textarea');
+                textArea.value = textToCopy;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showMessage('Скопировано в буфер обмена!', 'success');
+            }
         }
         
         // ПОИСК
@@ -106,9 +214,9 @@
                 const famePastes = approved.filter(p => p.tag === '#фейм');
                 const container = document.getElementById('pastesContainer');
                 container.innerHTML = famePastes.map(p => `
-                    <div class="paste-card">
+                    <div class="paste-card" onclick="showFullPaste(${p.id})">
                         <div class="paste-lika">${escapeHtml(p.lika)}</div>
-                        <div class="paste-author">by ${escapeHtml(p.author)}</div>
+                        <div class="paste-author">by ${escapeHtml(p.author)} • ${p.date}</div>
                     </div>
                 `).join('');
                 return;
@@ -116,16 +224,33 @@
             
             const filtered = approved.filter(p => 
                 p.lika.toLowerCase().includes(query) ||
-                p.author.toLowerCase().includes(query)
+                p.author.toLowerCase().includes(query) ||
+                p.validation.toLowerCase().includes(query) ||
+                p.content.toLowerCase().includes(query)
             );
             
             const container = document.getElementById('pastesContainer');
             container.innerHTML = filtered.map(p => `
-                <div class="paste-card">
+                <div class="paste-card" onclick="showFullPaste(${p.id})">
                     <div class="paste-lika">${escapeHtml(p.lika)}</div>
-                    <div class="paste-author">by ${escapeHtml(p.author)}</div>
+                    <div class="paste-author">by ${escapeHtml(p.author)} • ${p.date}</div>
                 </div>
             `).join('');
+        });
+        
+        // ЗАКРЫТЬ МОДАЛКУ ПРИ НАЖАТИИ ВНЕ ЕЕ
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('pasteModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+        
+        // ЗАКРЫТЬ МОДАЛКУ ПРИ НАЖАТИИ ESC
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
         });
         
         function escapeHtml(text) {
