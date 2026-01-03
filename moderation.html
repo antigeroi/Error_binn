@@ -9,13 +9,9 @@
         .header { display: flex; align-items: center; margin-bottom: 30px; }
         .back-btn { color: white; font-size: 30px; margin-right: 15px; text-decoration: none; }
         h1 { color: red; margin: 0; }
-        
-        /* ФОРМА ВХОДА */
         .login-box { background: #222; padding: 40px; border-radius: 10px; max-width: 400px; margin: 100px auto; text-align: center; border: 2px solid red; }
         .login-input { padding: 15px; width: 100%; margin: 20px 0; background: #333; border: 1px solid #444; color: white; border-radius: 5px; text-align: center; }
         .login-btn { padding: 15px; width: 100%; background: red; color: white; border: none; border-radius: 5px; font-weight: bold; }
-        
-        /* ПАСТЫ НА МОДЕРАЦИИ */
         .paste-card { background: #222; padding: 20px; margin: 15px 0; border-radius: 10px; border-left: 4px solid orange; }
         .paste-lika { color: orange; font-weight: bold; }
         .paste-preview { background: #111; padding: 15px; border-radius: 5px; margin: 10px 0; color: #ccc; font-size: 14px; }
@@ -29,15 +25,13 @@
 </head>
 <body>
 
-<!-- ПЕРВЫЙ ЭКРАН - ПАРОЛЬ САЙТА -->
-<div id="siteLogin" class="login-box" style="display: none;">
+<div id="siteLogin" class="login-box">
     <h2 style="margin-bottom: 20px;">🔐 ERRORBIN</h2>
     <input type="password" class="login-input" id="sitePassword" placeholder="Пароль доступа к сайту" autocomplete="off">
     <button class="login-btn" onclick="checkSitePassword()">ДАЛЕЕ</button>
     <p id="siteError" style="color: red; margin-top: 15px; display: none;">Неверный пароль!</p>
 </div>
 
-<!-- ВТОРОЙ ЭКРАН - ПАРОЛЬ АДМИНА -->
 <div id="adminLogin" class="admin-login" style="display: none;">
     <h2 style="margin-bottom: 20px;">👑 АДМИН ПАНЕЛЬ</h2>
     <input type="password" class="login-input" id="adminPassword" placeholder="Пароль админа" autocomplete="off">
@@ -45,7 +39,6 @@
     <p id="adminError" style="color: red; margin-top: 15px; display: none;">Неверный пароль админа!</p>
 </div>
     
-<!-- ПАНЕЛЬ МОДЕРАЦИИ -->
 <div id="adminPanel" style="display: none;">
     <div class="header">
         <a href="index.html" class="back-btn">←</a>
@@ -60,60 +53,38 @@
 </div>
 
 <script>
-// 🛡️ ЗАШИФРОВАННЫЕ КЛЮЧИ
-const ENCRYPTED_DATA = {
-    data1: "Nj5lNTc5ZjJhZTU5NmU3MDhmYzEzZjU3",
-    data2: "JDJhJDEwJGxNM25IV2Y1b2hFM..",
-    data3: "MTIyMzMx",
-    salt: "ZHIzQkZOZXh3dDRt"
-};
-
-// 🔓 ДЕШИФРОВКА
-function decryptConfig(password) {
-    try {
-        const part1 = atob(ENCRYPTED_DATA.data1);
-        const part2 = atob(ENCRYPTED_DATA.data2.replace('..', 'ohFdWY1K/tn07eVuj7W80ZljxdwJUaND/cBOQdKKxptVC'));
-        const part3 = atob(ENCRYPTED_DATA.data3);
-        
-        const check = password.split('').map(c => c.charCodeAt(0)).reduce((a,b) => a + b, 0);
-        if (check !== 1127 && password !== "error2024!") {
-            return null;
-        }
-        
-        return {
-            BIN_ID: part1,
-            MASTER_KEY: part2,
-            ADMIN_PASS: part3
-        };
-    } catch (e) {
-        return null;
-    }
+// 🛡️ МАТЕМАТИЧЕСКОЕ ШИФРОВАНИЕ
+function getConfig() {
+    const parts = {
+        a: [54, 57, 53, 56, 55, 57, 102, 50, 97, 101, 53, 57, 54, 101, 55, 48, 56, 102, 99, 49, 51, 102, 53, 55],
+        b: [36, 50, 97, 36, 49, 48, 36, 108, 77, 51, 119, 72, 87, 102, 53, 111, 104, 69, 49, 99, 74, 48, 75, 47, 116, 110, 48, 55, 101, 86, 117, 106, 55, 87, 56, 48, 90, 108, 106, 120, 100, 119, 74, 85, 97, 78, 68, 47, 99, 66, 79, 81, 100, 75, 75, 120, 112, 116, 86, 67],
+        c: [49, 50, 50, 51, 51, 49]
+    };
+    
+    return {
+        BIN_ID: String.fromCharCode(...parts.a),
+        MASTER_KEY: String.fromCharCode(...parts.b),
+        ADMIN_PASS: String.fromCharCode(...parts.c)
+    };
 }
 
 let CONFIG = null;
 let currentVersion = null;
 
-// 🔐 ПРОВЕРКА ПАРОЛЯ САЙТА
 function checkSitePassword() {
     const password = document.getElementById('sitePassword').value;
-    const validPasswords = ["error2024!", "122331", "errorbin"];
     
-    if (validPasswords.includes(password)) {
-        CONFIG = decryptConfig(password);
-        if (CONFIG) {
-            localStorage.setItem('eb_auth', '1');
-            document.getElementById('siteLogin').style.display = 'none';
-            document.getElementById('adminLogin').style.display = 'block';
-        } else {
-            document.getElementById('siteError').style.display = 'block';
-        }
+    if (password === "122331" || password === "error") {
+        CONFIG = getConfig();
+        localStorage.setItem('eb_auth', '1');
+        document.getElementById('siteLogin').style.display = 'none';
+        document.getElementById('adminLogin').style.display = 'block';
     } else {
         document.getElementById('siteError').style.display = 'block';
         document.getElementById('sitePassword').value = '';
     }
 }
 
-// 🔐 ПРОВЕРКА ПАРОЛЯ АДМИНА
 function checkAdminPassword() {
     const password = document.getElementById('adminPassword').value;
     
@@ -128,11 +99,10 @@ function checkAdminPassword() {
     }
 }
 
-// 📥 ЗАГРУЗИТЬ ПАСТЫ НА МОДЕРАЦИЮ
 async function loadPendingPastes() {
     try {
         const response = await fetch(
-            `https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}/latest`,
+            `https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`,
             { headers: { 'X-Master-Key': CONFIG.MASTER_KEY } }
         );
         
@@ -187,13 +157,12 @@ async function loadPendingPastes() {
     }
 }
 
-// ✅ ОДОБРИТЬ ПАСТУ
 async function approvePaste(id, addFame) {
     if (!confirm(`Одобрить пасту #${id}${addFame ? ' с тегом #фейм' : ''}?`)) return;
     
     try {
         const response = await fetch(
-            `https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}/latest`,
+            `https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`,
             { headers: { 'X-Master-Key': CONFIG.MASTER_KEY } }
         );
         
@@ -237,13 +206,12 @@ async function approvePaste(id, addFame) {
     }
 }
 
-// ❌ ОТКЛОНИТЬ ПАСТУ
 async function rejectPaste(id) {
     if (!confirm(`Отклонить пасту #${id}?`)) return;
     
     try {
         const response = await fetch(
-            `https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}/latest`,
+            `https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`,
             { headers: { 'X-Master-Key': CONFIG.MASTER_KEY } }
         );
         
@@ -290,21 +258,16 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// 🚀 АВТО-ВХОД
+// АВТО-ВХОД
 window.addEventListener('DOMContentLoaded', () => {
     const auth = localStorage.getItem('eb_auth');
     if (auth) {
-        CONFIG = decryptConfig("error2024!");
-        if (CONFIG) {
-            document.getElementById('siteLogin').style.display = 'none';
-            document.getElementById('adminLogin').style.display = 'block';
-        }
-    } else {
-        document.getElementById('siteLogin').style.display = 'block';
+        CONFIG = getConfig();
+        document.getElementById('siteLogin').style.display = 'none';
+        document.getElementById('adminLogin').style.display = 'block';
     }
 });
 
-// ENTER ДЛЯ ВВОДА
 document.getElementById('sitePassword').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') checkSitePassword();
 });
