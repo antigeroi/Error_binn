@@ -20,85 +20,76 @@
         .btn-approve { background: #0f0; color: black; }
         .btn-fame { background: purple; color: white; }
         .btn-reject { background: red; color: white; }
-        .admin-login { background: #222; padding: 30px; border-radius: 10px; max-width: 400px; margin: 50px auto; text-align: center; border: 2px solid red; }
     </style>
 </head>
 <body>
-
-<div id="siteLogin" class="login-box">
-    <h2 style="margin-bottom: 20px;">🔐 ERRORBIN</h2>
-    <input type="password" class="login-input" id="sitePassword" placeholder="Пароль доступа к сайту" autocomplete="off">
-    <button class="login-btn" onclick="checkSitePassword()">ДАЛЕЕ</button>
-    <p id="siteError" style="color: red; margin-top: 15px; display: none;">Неверный пароль!</p>
-</div>
-
-<div id="adminLogin" class="admin-login" style="display: none;">
-    <h2 style="margin-bottom: 20px;">👑 АДМИН ПАНЕЛЬ</h2>
-    <input type="password" class="login-input" id="adminPassword" placeholder="Пароль админа" autocomplete="off">
-    <button class="login-btn" onclick="checkAdminPassword()">ВОЙТИ</button>
-    <p id="adminError" style="color: red; margin-top: 15px; display: none;">Неверный пароль админа!</p>
-</div>
-    
-<div id="adminPanel" style="display: none;">
-    <div class="header">
-        <a href="index.html" class="back-btn">←</a>
-        <h1>Панель модерации</h1>
+    <div id="loginScreen" class="login-box">
+        <h2 style="margin-bottom: 20px;">🔐 ВХОД В АДМИНКУ</h2>
+        <input type="password" class="login-input" id="adminPassword" placeholder="Пароль админа" autocomplete="off">
+        <button class="login-btn" onclick="checkAdminPassword()">ВОЙТИ</button>
+        <p id="loginError" style="color: red; margin-top: 15px; display: none;">Неверный пароль!</p>
     </div>
     
-    <div id="pendingContainer">
-        <div style="text-align: center; padding: 50px; color: #888;">
-            Загрузка...
+    <div id="adminPanel" style="display: none;">
+        <div class="header">
+            <a href="index.html" class="back-btn">←</a>
+            <h1>Панель модерации</h1>
+        </div>
+        
+        <div id="pendingContainer">
+            <div style="text-align: center; padding: 50px; color: #888;">
+                Загрузка...
+            </div>
         </div>
     </div>
-</div>
 
 <script>
-// 🛡️ МАТЕМАТИЧЕСКОЕ ШИФРОВАНИЕ
+// 🛡️ ЗАШИФРОВАННЫЕ КЛЮЧИ
 function getConfig() {
-    const parts = {
-        a: [54, 57, 53, 56, 55, 57, 102, 50, 97, 101, 53, 57, 54, 101, 55, 48, 56, 102, 99, 49, 51, 102, 53, 55],
-        b: [36, 50, 97, 36, 49, 48, 36, 108, 77, 51, 119, 72, 87, 102, 53, 111, 104, 69, 49, 99, 74, 48, 75, 47, 116, 110, 48, 55, 101, 86, 117, 106, 55, 87, 56, 48, 90, 108, 106, 120, 100, 119, 74, 85, 97, 78, 68, 47, 99, 66, 79, 81, 100, 75, 75, 120, 112, 116, 86, 67],
-        c: [49, 50, 50, 51, 51, 49]
-    };
+    const binParts = [
+        54, 57, 53, 56, 55, 57, 102, 50, 97, 101, 
+        53, 57, 54, 101, 55, 48, 56, 102, 99, 49, 
+        51, 102, 53, 55
+    ];
+    
+    const keyParts = [
+        36, 50, 97, 36, 49, 48, 36, 108, 77, 51, 
+        119, 72, 87, 102, 53, 111, 104, 69, 49, 99, 
+        74, 48, 75, 47, 116, 110, 48, 55, 101, 86, 
+        117, 106, 55, 87, 56, 48, 90, 108, 106, 120, 
+        100, 119, 74, 85, 97, 78, 68, 47, 99, 66, 
+        79, 81, 100, 75, 75, 120, 112, 116, 86, 67
+    ];
+    
+    const passParts = [49, 50, 50, 51, 51, 49];
     
     return {
-        BIN_ID: String.fromCharCode(...parts.a),
-        MASTER_KEY: String.fromCharCode(...parts.b),
-        ADMIN_PASS: String.fromCharCode(...parts.c)
+        BIN_ID: String.fromCharCode(...binParts),
+        MASTER_KEY: String.fromCharCode(...keyParts),
+        ADMIN_PASS: String.fromCharCode(...passParts)
     };
 }
 
-let CONFIG = null;
+const CONFIG = getConfig();
 let currentVersion = null;
 
-function checkSitePassword() {
-    const password = document.getElementById('sitePassword').value;
-    
-    if (password === "122331" || password === "error") {
-        CONFIG = getConfig();
-        localStorage.setItem('eb_auth', '1');
-        document.getElementById('siteLogin').style.display = 'none';
-        document.getElementById('adminLogin').style.display = 'block';
-    } else {
-        document.getElementById('siteError').style.display = 'block';
-        document.getElementById('sitePassword').value = '';
-    }
-}
-
+// 🔐 ПРОВЕРКА ПАРОЛЯ АДМИНА
 function checkAdminPassword() {
-    const password = document.getElementById('adminPassword').value;
+    const input = document.getElementById('adminPassword').value;
+    const errorElem = document.getElementById('loginError');
     
-    if (password === CONFIG.ADMIN_PASS) {
-        document.getElementById('adminLogin').style.display = 'none';
+    if (input === CONFIG.ADMIN_PASS) {
+        document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('adminPanel').style.display = 'block';
         loadPendingPastes();
     } else {
-        document.getElementById('adminError').style.display = 'block';
+        errorElem.style.display = 'block';
         document.getElementById('adminPassword').style.borderColor = 'red';
         document.getElementById('adminPassword').value = '';
     }
 }
 
+// 📥 ЗАГРУЗИТЬ ПАСТЫ НА МОДЕРАЦИЮ
 async function loadPendingPastes() {
     try {
         const response = await fetch(
@@ -157,6 +148,7 @@ async function loadPendingPastes() {
     }
 }
 
+// ✅ ОДОБРИТЬ ПАСТУ
 async function approvePaste(id, addFame) {
     if (!confirm(`Одобрить пасту #${id}${addFame ? ' с тегом #фейм' : ''}?`)) return;
     
@@ -206,6 +198,7 @@ async function approvePaste(id, addFame) {
     }
 }
 
+// ❌ ОТКЛОНИТЬ ПАСТУ
 async function rejectPaste(id) {
     if (!confirm(`Отклонить пасту #${id}?`)) return;
     
@@ -258,21 +251,8 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// АВТО-ВХОД
-window.addEventListener('DOMContentLoaded', () => {
-    const auth = localStorage.getItem('eb_auth');
-    if (auth) {
-        CONFIG = getConfig();
-        document.getElementById('siteLogin').style.display = 'none';
-        document.getElementById('adminLogin').style.display = 'block';
-    }
-});
-
-document.getElementById('sitePassword').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') checkSitePassword();
-});
-
-document.getElementById('adminPassword').addEventListener('keypress', (e) => {
+// ⌨️ ВВОД ПО ENTER
+document.getElementById('adminPassword').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') checkAdminPassword();
 });
 </script>
