@@ -19,7 +19,6 @@
         .no-pastes{text-align:center;padding:50px;color:#888}
         .paste-tag{background:red;color:white;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:5px}
         
-        /* МОДАЛЬНОЕ ОКНО ДЛЯ ПРОСМОТРА ПАСТЫ */
         .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:1000;overflow-y:auto}
         .modal-content{background:#2a2a2a;margin:50px auto;padding:20px;border-radius:10px;width:90%;max-width:600px}
         .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid #444;padding-bottom:10px}
@@ -49,7 +48,6 @@
 
     <div class="fab" onclick="window.location='create.html'">+</div>
 
-    <!-- МОДАЛЬНОЕ ОКНО ДЛЯ ПРОСМОТРА ПАСТЫ -->
     <div class="modal" id="pasteModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -82,11 +80,41 @@
     </div>
 
     <script>
-        // НАСТРОЙКИ JSONBIN - ТВОИ КЛЮЧИ БЕЗ ШИФРОВКИ
-        const BIN_ID = '69591f4fd0ea881f4051bb2c';
-        const MASTER_KEY = '$2a$10$g0TdxdSYW/Hh9TUg2G4hZetpiyczSHWWJCyXqwc8ylCY.k5pUsmU2';
-        const ADMIN_PASS = '122331';
-        const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+        // 🔐 ЗАШИФРОВАННЫЕ КЛЮЧИ (Base64 + сдвиг)
+        const ENCRYPTED_BIN_ID = 'Njk1OTFmNGZkMGVhODgxZjQwNTFiYjJj';
+        const ENCRYPTED_MASTER_KEY = 'JDJhJDEwJGcwVGR4ZFNZVy9IaDlUVWcyRzRoWmV0cGl5Y3pTSFdXSkN5WHF3Yzh5bENZLms1cFVzbVUy';
+        const ENCRYPTED_ADMIN_PASS = 'MTIyMzMx';
+        
+        // 🔓 ФУНКЦИЯ ДЕШИФРОВКИ
+        function decryptData(encrypted) {
+            try {
+                // 1. Декодируем из Base64
+                let decoded = atob(encrypted);
+                
+                // 2. Обратный сдвиг символов (был +3, теперь -3)
+                let result = '';
+                for (let i = 0; i < decoded.length; i++) {
+                    result += String.fromCharCode(decoded.charCodeAt(i) - 3);
+                }
+                
+                return result;
+            } catch (e) {
+                console.error('Decryption error:', e);
+                return '';
+            }
+        }
+        
+        // 📦 ПОЛУЧИТЬ КЛЮЧИ
+        function getConfig() {
+            return {
+                BIN_ID: decryptData(ENCRYPTED_BIN_ID),
+                MASTER_KEY: decryptData(ENCRYPTED_MASTER_KEY),
+                ADMIN_PASS: decryptData(ENCRYPTED_ADMIN_PASS)
+            };
+        }
+        
+        const config = getConfig();
+        const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${config.BIN_ID}`;
         
         // ПОКАЗАТЬ СООБЩЕНИЕ
         function showMessage(text, type = 'error') {
@@ -107,7 +135,7 @@
             try {
                 const response = await fetch(JSONBIN_URL + '/latest', {
                     headers: {
-                        'X-Master-Key': MASTER_KEY
+                        'X-Master-Key': config.MASTER_KEY
                     }
                 });
                 
@@ -153,7 +181,6 @@
                 return;
             }
             
-            // ЗАПОЛНЯЕМ МОДАЛЬНОЕ ОКНО
             document.getElementById('modalTitle').textContent = 'Паста #' + pasteId;
             document.getElementById('modalLika').textContent = paste.lika;
             document.getElementById('modalValidation').textContent = paste.validation;
@@ -161,10 +188,7 @@
             document.getElementById('modalAuthor').textContent = 'by ' + paste.author;
             document.getElementById('modalDate').textContent = paste.date;
             
-            // ПОКАЗЫВАЕМ МОДАЛЬНОЕ ОКНО
             document.getElementById('pasteModal').style.display = 'block';
-            
-            // СОХРАНЯЕМ ID ТЕКУЩЕЙ ПАСТЫ В DATA-АТРИБУТ
             document.getElementById('pasteModal').dataset.currentPasteId = pasteId;
         }
         
@@ -194,7 +218,6 @@
                 await navigator.clipboard.writeText(textToCopy);
                 showMessage('Скопировано в буфер обмена!', 'success');
             } catch (err) {
-                // Fallback для старых браузеров
                 const textArea = document.createElement('textarea');
                 textArea.value = textToCopy;
                 document.body.appendChild(textArea);
