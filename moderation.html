@@ -45,19 +45,30 @@
 
 <script>
 // 🛡️ ЗАШИФРОВАННЫЕ КЛЮЧИ
-function getConfig() {
-    const binParts = [54,57,53,56,55,57,102,50,97,101,53,57,54,101,55,48,56,102,99,49,51,102,53,55];
-    const keyParts = [36,50,97,36,49,48,36,108,77,51,119,72,87,102,53,111,104,69,49,99,74,48,75,47,116,110,48,55,101,86,117,106,55,87,56,48,90,108,106,120,100,119,74,85,97,78,68,47,99,66,79,81,100,75,75,120,112,116,86,67];
-    const passParts = [49,50,50,51,51,49]; // 122331
-    
-    return {
-        BIN_ID: String.fromCharCode(...binParts),
-        MASTER_KEY: String.fromCharCode(...keyParts),
-        ADMIN_PASS: String.fromCharCode(...passParts)
-    };
+const ENCODED = {
+    a: "Njk1ODc5ZjJhZTU5NmU3MDhmYzEzZjU3",
+    b: "JDJhJDEwJGxNM25IV2Y1b2hFM1RwZXlyek9QWGVMZ1gzd3V2blFDT1AyRHpKakNQdFlwQlh0cmFmN3dD",
+    c: "MTIyMzMx"
+};
+
+// 🔓 РАСШИФРОВКА
+function getKeys() {
+    try {
+        return {
+            BIN_ID: atob(ENCODED.a),
+            MASTER_KEY: atob(ENCODED.b),
+            ADMIN_PASS: atob(ENCODED.c)
+        };
+    } catch(e) {
+        return {
+            BIN_ID: "695879f2ae596e708fc13f57",
+            MASTER_KEY: "$2a$10$lM3wHWf5ohE1cJ0K/tn07eVuj7W80ZljxdwJUaND/cBOQdKKxptVC",
+            ADMIN_PASS: "122331"
+        };
+    }
 }
 
-const CONFIG = getConfig();
+const CONFIG = getKeys();
 let currentVersion = null;
 
 // 🔐 ПРОВЕРКА ПАРОЛЯ АДМИНА
@@ -81,10 +92,18 @@ async function loadPendingPastes() {
     try {
         const response = await fetch(
             `https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`,
-            { headers: { 'X-Master-Key': CONFIG.MASTER_KEY } }
+            { 
+                headers: { 
+                    'X-Master-Key': CONFIG.MASTER_KEY,
+                    'X-Bin-Versioning': 'false'
+                } 
+            }
         );
         
-        if (!response.ok) throw new Error('Ошибка загрузки');
+        if (!response.ok) {
+            throw new Error(`Ошибка загрузки: ${response.status}`);
+        }
+        
         const data = await response.json();
         const db = data.record;
         currentVersion = data.metadata.version;
@@ -142,7 +161,12 @@ async function approvePaste(id, addFame) {
     try {
         const response = await fetch(
             `https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`,
-            { headers: { 'X-Master-Key': CONFIG.MASTER_KEY } }
+            { 
+                headers: { 
+                    'X-Master-Key': CONFIG.MASTER_KEY,
+                    'X-Bin-Versioning': 'false'
+                } 
+            }
         );
         
         if (!response.ok) throw new Error('Ошибка загрузки');
@@ -192,7 +216,12 @@ async function rejectPaste(id) {
     try {
         const response = await fetch(
             `https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`,
-            { headers: { 'X-Master-Key': CONFIG.MASTER_KEY } }
+            { 
+                headers: { 
+                    'X-Master-Key': CONFIG.MASTER_KEY,
+                    'X-Bin-Versioning': 'false'
+                } 
+            }
         );
         
         if (!response.ok) throw new Error('Ошибка загрузки');
