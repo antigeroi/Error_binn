@@ -47,19 +47,19 @@
     <button class="btn btn-cancel" onclick="window.location='index.html'">❌ ОТМЕНА</button>
 
 <script>
-// 🗝️ ТВОИ КЛЮЧИ
-const KEYS = {
-    bin: "Njk1OTFhMjJhZTU5NmU3MDhmYzI0MjIz",
-    master: "JDJhJDEwJGcwVGR4ZFNYVy9IaDlUVWcyRzRoWmV0cGl5Y3pTSFdXSkN5WHF3Yzh5bENZLms1cFVzbVUy",
-    admin: "MTIyMzMx"
+// 🗝️ ЗАШИФРОВАННЫЕ КЛЮЧИ
+const SECRET_KEYS = {
+    id: "Njk1OTFmNGZkMGVhODgxZjQwNTFiYjJj",
+    key: "JDJhJDEwJGcwVGR4ZFNYVy9IaDlUVWcyRzRoWmV0cGl5Y3pTSFdXSkN5WHF3Yzh5bENZLms1cFVzbVUy",
+    pass: "MTIyMzMx"
 };
 
 // 🔓 РАСШИФРОВКА
 function getConfig() {
     return {
-        BIN_ID: atob(KEYS.bin),
-        MASTER_KEY: atob(KEYS.master),
-        ADMIN_PASS: atob(KEYS.admin)
+        BIN_ID: atob(SECRET_KEYS.id),
+        MASTER_KEY: atob(SECRET_KEYS.key),
+        ADMIN_PASS: atob(SECRET_KEYS.pass)
     };
 }
 
@@ -101,6 +101,7 @@ async function submitPaste() {
     }
     
     const btn = document.querySelector('.btn-submit');
+    const originalText = btn.textContent;
     btn.textContent = '🔄 Отправка...';
     btn.disabled = true;
     
@@ -110,7 +111,9 @@ async function submitPaste() {
             headers: { 'X-Master-Key': CONFIG.MASTER_KEY }
         });
         
-        if (!response.ok) throw new Error('Ошибка загрузки базы');
+        if (!response.ok) {
+            throw new Error('Ошибка загрузки: ' + response.status);
+        }
         
         const data = await response.json();
         const db = data.record;
@@ -145,16 +148,23 @@ async function submitPaste() {
             document.getElementById('lika').value = '';
             document.getElementById('validation').value = '';
             document.getElementById('content').value = '';
+            document.getElementById('likaCount').textContent = '0/100';
+            document.getElementById('validationCount').textContent = '0/500';
+            document.getElementById('contentCount').textContent = '0/2000';
             
             // ВЕРНУТЬСЯ НА ГЛАВНУЮ
-            setTimeout(() => window.location.href = 'index.html', 2000);
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
         } else {
-            throw new Error('Ошибка сохранения');
+            const errorData = await saveResponse.json();
+            throw new Error('Ошибка сохранения: ' + (errorData.message || saveResponse.status));
         }
         
     } catch (error) {
-        showMessage('❌ Ошибка: ' + error.message);
-        btn.textContent = '✅ ОТПРАВИТЬ';
+        console.error('Ошибка отправки:', error);
+        showMessage(`❌ ${error.message}`);
+        btn.textContent = originalText;
         btn.disabled = false;
     }
 }
