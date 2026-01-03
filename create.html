@@ -1,466 +1,153 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Создать пасту 🔒</title>
+    <title>[+]</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body{background:#111;color:#fff;font-family:'Segoe UI',Arial,sans-serif;margin:0;min-height:100vh}
-        .header{background:linear-gradient(135deg,#1a1a1a,#222);padding:15px;border-bottom:2px solid #ff4444;display:flex;align-items:center;position:sticky;top:0;z-index:1000}
-        .back-btn{color:#fff;text-decoration:none;font-size:28px;margin-right:15px;transition:all 0.3s}
-        .back-btn:hover{color:#ff4444;transform:scale(1.2)}
-        h1{color:#ff4444;margin:0;font-size:22px;font-weight:bold}
-        .form-container{max-width:600px;margin:30px auto;padding:0 20px}
-        .form-group{margin-bottom:25px}
-        label{display:block;color:#aaa;margin-bottom:8px;font-weight:bold;font-size:14px}
-        input,textarea{width:100%;padding:15px;background:#222;border:1px solid #444;border-radius:10px;color:#fff;font-size:16px;font-family:'Segoe UI',Arial;transition:all 0.3s;box-sizing:border-box}
-        input:focus,textarea:focus{outline:none;border-color:#44ff44;box-shadow:0 0 10px rgba(68,255,68,0.3)}
-        textarea{min-height:150px;resize:vertical}
-        .btn-group{display:flex;gap:15px;margin-top:30px}
-        .btn{flex:1;padding:16px;border:none;border-radius:10px;font-weight:bold;font-size:16px;cursor:pointer;transition:all 0.3s}
-        .btn-submit{background:linear-gradient(135deg,#44ff44,#22aa22);color:#000;box-shadow:0 4px 10px rgba(68,255,68,0.3)}
-        .btn-submit:hover{background:linear-gradient(135deg,#55ff55,#33bb33);transform:translateY(-2px);box-shadow:0 6px 15px rgba(68,255,68,0.4)}
-        .btn-cancel{background:transparent;border:2px solid #666;color:#aaa}
-        .btn-cancel:hover{background:#222;border-color:#888;color:#fff}
-        .message{background:#ff4444;color:white;padding:15px;border-radius:10px;margin-bottom:20px;display:none;text-align:center;font-weight:bold}
-        .message.success{background:linear-gradient(135deg,#44ff44,#22aa22);color:#000}
-        .char-count{text-align:right;color:#888;font-size:12px;margin-top:5px}
-        .char-count.warning{color:#ffaa44}
-        .char-count.error{color:#ff4444}
-        
-        /* ЗАЩИТНЫЙ ЭКРАН */
-        .shield-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:#111;z-index:9999;display:flex;justify-content:center;align-items:center}
-        .shield-box{background:#222;padding:40px;border-radius:15px;text-align:center;border:2px solid #ff4444;max-width:400px;width:90%}
-        .shield-input{padding:15px;width:100%;margin:20px 0;background:#333;border:1px solid #444;border-radius:8px;color:#fff;font-size:16px;text-align:center}
-        .shield-btn{padding:12px 30px;background:#ff4444;color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer;transition:all 0.3s}
-        .shield-btn:hover{background:#ff2222;transform:scale(1.05)}
-        .shield-error{color:#ff4444;margin-top:15px;display:none}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:#0a0a0a;color:#d0d0d0;font-family:monospace;padding:12px}
+        .h{display:flex;align-items:center;margin-bottom:15px}
+        .b{color:#d0d0d0;font-size:18px;margin-right:8px;text-decoration:none}
+        .t{color:#f00}
+        .i,.ta{width:100%;padding:10px;margin-bottom:12px;background:#111;border:1px solid #333;color:#d0d0d0;font-family:inherit;border-radius:3px}
+        .ta{min-height:70px;resize:vertical}
+        .bt{width:100%;padding:10px;background:#0a0;color:#000;border:none;border-radius:3px;font-weight:bold;margin:4px 0;cursor:pointer}
+        .bc{background:#333}
+        .m{background:#f00;color:#000;padding:8px;border-radius:3px;margin-bottom:12px;display:none;text-align:center;font-size:12px}
+        .ms{background:#0a0}
     </style>
 </head>
 <body>
-    <!-- ЗАЩИТНЫЙ ЭКРАН -->
-    <div class="shield-screen" id="shieldScreen">
-        <div class="shield-box">
-            <h2 style="color:#ff4444;margin-bottom:10px">🔒 ДОСТУП К СОЗДАНИЮ</h2>
-            <p style="color:#aaa;margin-bottom:20px">Введите пароль для создания пасты</p>
-            <input type="password" class="shield-input" id="shieldPassword" placeholder="••••••" autocomplete="off">
-            <button class="shield-btn" onclick="checkShieldPassword()">Продолжить</button>
-            <p id="shieldError" class="shield-error">Неверный пароль!</p>
-        </div>
+    <div class="h">
+        <a href="index.html" class="b">←</a>
+        <div class="t">[+]</div>
     </div>
-
-    <!-- ОСНОВНОЙ ИНТЕРФЕЙС -->
-    <div class="header">
-        <a href="index.html" class="back-btn">←</a>
-        <h1>Создать пасту</h1>
-    </div>
-
-    <div class="form-container">
-        <div class="message" id="message"></div>
-
-        <div class="form-group">
-            <label>🔑 ЛИКА:</label>
-            <input type="text" id="lika" placeholder="Кто сделал" maxlength="100" autocomplete="off">
-            <div class="char-count" id="likaCount">0/100</div>
-        </div>
-
-        <div class="form-group">
-            <label>✅ ВАЛИДАЦИЯ:</label>
-            <textarea id="validation" placeholder="Цепочка валидации" maxlength="500"></textarea>
-            <div class="char-count" id="validationCount">0/500</div>
-        </div>
-
-        <div class="form-group">
-            <label>📄 ПАСТА:</label>
-            <textarea id="content" placeholder="Информация"></textarea>
-            <div class="char-count" id="contentCount">0/2000</div>
-        </div>
-
-        <div class="btn-group">
-            <button class="btn btn-submit" onclick="submitPaste()">✅ Создать пасту</button>
-            <button class="btn btn-cancel" onclick="goBack()">❌ Отмена</button>
-        </div>
-    </div>
+    
+    <div class="m" id="msg"></div>
+    
+    <input type="text" class="i" id="li" placeholder="[ID]" maxlength="50">
+    <textarea class="ta" id="va" placeholder="[VLD]" maxlength="300"></textarea>
+    <textarea class="ta" id="co" placeholder="[CNT]"></textarea>
+    
+    <button class="bt" onclick="_x()">[SND]</button>
+    <button class="bt bc" onclick="location.href='index.html'">[X]</button>
 
     <script>
-        // 🔐 СИСТЕМА ЗАЩИТЫ CREATE.HTML
+        // 🔒 ЗАШИФРОВАННЫЕ ДАННЫЕ
+        const _1 = [
+            'Njk1ODc5ZjJhZTU5NmU3MDhmYzEzZjU3',
+            'JDJhJDEwJGxNM3dIV2Y1b2hFMWNKMEsvdG4wN2VWdWo3VzgwWmxqeGR3SlVhTkQvY0JPUWRLS3hwdFZD',
+            'cGVuZGluZw=='
+        ];
         
-        // КОНФИГУРАЦИЯ
-        const SECURITY_CONFIG = {
-            ACCESS_PASSWORD: '188221',
-            ENCRYPTED_KEYS: {
-                binId: 'Njk1ODY5MzlhZTU5NmU3MDhmYzEyNGI3',
-                masterKey: 'JDJhJDEwJGwxNWJHczVjSlVpSW1ZRVcwUzhwSnVIUmxrT2hvNTMuZ2FNOGt4NUNOSWFE" + "MHdnWTIyRFo2'
-            },
-            MAX_ATTEMPTS: 3
-        };
-        
-        let securityToken = null;
-        let failedAttempts = 0;
-        let keys = null;
-        let JSONBIN_URL = null;
-        
-        // 🔐 ИНИЦИАЛИЗАЦИЯ ЗАЩИТЫ
-        function initializeSecurity() {
-            console.log('🛡️ Проверка доступа к созданию...');
-            
-            // Проверка токена из index.html
-            const sessionToken = localStorage.getItem('create_token');
-            const mainSession = localStorage.getItem('secure_session');
-            
-            if (sessionToken && mainSession) {
-                try {
-                    const session = JSON.parse(mainSession);
-                    if (session.token === sessionToken && session.expiry > Date.now()) {
-                        securityToken = sessionToken;
-                        document.getElementById('shieldScreen').style.display = 'none';
-                        initializeForm();
-                        return;
-                    }
-                } catch(e) {
-                    localStorage.removeItem('create_token');
-                }
+        // 🔓 ДЕКОДЕР
+        function _d() {
+            try {
+                return {
+                    i: atob(_1[0]),
+                    k: atob(_1[1]),
+                    w: atob(_1[2])
+                };
+            } catch(e) {
+                return { i: '', k: '', w: '' };
             }
-            
-            // Показать экран защиты
-            document.getElementById('shieldScreen').style.display = 'flex';
-            document.getElementById('shieldPassword').focus();
-            
-            // Обработка Enter
-            document.getElementById('shieldPassword').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') checkShieldPassword();
-            });
         }
         
-        // 🔐 ПРОВЕРКА ПАРОЛЯ
-        function checkShieldPassword() {
-            const input = document.getElementById('shieldPassword').value.trim();
-            const errorElem = document.getElementById('shieldError');
+        // 📨 ОТПРАВКА
+        async function _x() {
+            const li = document.getElementById('li').value.trim();
+            const va = document.getElementById('va').value.trim();
+            const co = document.getElementById('co').value.trim();
             
-            if (input !== SECURITY_CONFIG.ACCESS_PASSWORD) {
-                failedAttempts++;
-                errorElem.style.display = 'block';
-                errorElem.textContent = `Неверный пароль! (${failedAttempts}/${SECURITY_CONFIG.MAX_ATTEMPTS})`;
-                
-                // Анимация ошибки
-                document.getElementById('shieldPassword').style.borderColor = '#ff4444';
-                document.getElementById('shieldPassword').style.animation = 'shake 0.5s';
-                setTimeout(() => {
-                    document.getElementById('shieldPassword').style.animation = '';
-                    document.getElementById('shieldPassword').value = '';
-                }, 500);
-                
-                if (failedAttempts >= SECURITY_CONFIG.MAX_ATTEMPTS) {
-                    setTimeout(() => window.location.href = 'index.html', 2000);
-                }
+            if (!li || !va || !co) {
+                _m('[ERR]', false);
                 return;
             }
             
-            // Успешный вход
-            securityToken = generateToken();
-            document.getElementById('shieldScreen').style.display = 'none';
-            showMessage('✅ Доступ разрешен', 'success');
-            initializeForm();
-        }
-        
-        // 🔐 ГЕНЕРАЦИЯ ТОКЕНА
-        function generateToken() {
-            return btoa(Date.now() + '|' + Math.random().toString(36)).substring(0, 32);
-        }
-        
-        // 🔐 ПОЛУЧЕНИЕ КЛЮЧЕЙ
-        function getSecureKeys() {
-            try {
-                const binId = atob(SECURITY_CONFIG.ENCRYPTED_KEYS.binId);
-                const masterKey = atob(SECURITY_CONFIG.ENCRYPTED_KEYS.masterKey);
-                
-                if (!binId || !masterKey) throw new Error('Invalid keys');
-                return { BIN_ID: binId, MASTER_KEY: masterKey };
-            } catch (e) {
-                console.error('Key error:', e);
-                showMessage('❌ Ошибка безопасности', 'error');
-                return null;
-            }
-        }
-        
-        // 🔐 БЕЗОПАСНЫЙ FETCH
-        async function secureFetch(url, options = {}) {
-            if (!securityToken) throw new Error('No security token');
+            _m('[...]', false);
             
-            if (!options.headers) options.headers = {};
-            options.headers['X-Security-Token'] = securityToken;
-            
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
-            options.signal = controller.signal;
+            const btn = document.querySelector('.bt');
+            const old = btn.textContent;
+            btn.textContent = '[...]';
+            btn.disabled = true;
             
             try {
-                const response = await fetch(url, options);
-                clearTimeout(timeoutId);
+                const d = _d();
+                if (!d.i) throw new Error();
                 
-                if (!response.ok) {
-                    if (response.status === 401 || response.status === 403) {
-                        showMessage('🔐 Требуется повторная авторизация', 'error');
-                        setTimeout(() => window.location.href = 'index.html', 2000);
-                    }
-                    throw new Error(`HTTP ${response.status}`);
-                }
+                // ЗАГРУЗКА
+                const res = await fetch(
+                    `https://api.jsonbin.io/v3/b/${d.i}/latest`,
+                    { headers: { 'X-Master-Key': d.k } }
+                );
                 
-                return response;
-            } catch (error) {
-                clearTimeout(timeoutId);
-                throw error;
-            }
-        }
-        
-        // 📝 ИНИЦИАЛИЗАЦИЯ ФОРМЫ
-        function initializeForm() {
-            console.log('📝 Инициализация формы создания...');
-            
-            // Получить ключи
-            keys = getSecureKeys();
-            if (!keys) return;
-            
-            JSONBIN_URL = `https://api.jsonbin.io/v3/b/${keys.BIN_ID}`;
-            
-            // Настройка счетчиков символов
-            setupCharCounters();
-            
-            // Автосохранение черновика каждые 30 секунд
-            setInterval(autoSaveDraft, 30000);
-            
-            // Восстановить черновик
-            restoreDraft();
-            
-            // Предотвратить закрытие с несохраненными данными
-            window.addEventListener('beforeunload', (e) => {
-                if (hasUnsavedChanges()) {
-                    e.preventDefault();
-                    e.returnValue = 'У вас есть несохраненные изменения. Уверены, что хотите уйти?';
-                }
-            });
-        }
-        
-        // 📝 НАСТРОЙКА СЧЕТЧИКОВ СИМВОЛОВ
-        function setupCharCounters() {
-            const fields = ['lika', 'validation', 'content'];
-            const limits = { lika: 100, validation: 500, content: 2000 };
-            
-            fields.forEach(field => {
-                const input = document.getElementById(field);
-                const counter = document.getElementById(field + 'Count');
-                
-                input.addEventListener('input', () => {
-                    const length = input.value.length;
-                    const limit = limits[field];
-                    const percent = (length / limit) * 100;
-                    
-                    counter.textContent = `${length}/${limit}`;
-                    counter.className = 'char-count';
-                    
-                    if (percent > 90) {
-                        counter.classList.add('warning');
-                    }
-                    if (percent > 100) {
-                        counter.classList.add('error');
-                        input.value = input.value.substring(0, limit);
-                        counter.textContent = `${limit}/${limit}`;
-                    }
-                    
-                    saveDraft();
-                });
-            });
-        }
-        
-        // 💾 АВТОСОХРАНЕНИЕ ЧЕРНОВИКА
-        function autoSaveDraft() {
-            if (hasUnsavedChanges()) {
-                saveDraft();
-                console.log('💾 Автосохранение черновика');
-            }
-        }
-        
-        // 💾 СОХРАНИТЬ ЧЕРНОВИК
-        function saveDraft() {
-            const draft = {
-                lika: document.getElementById('lika').value,
-                validation: document.getElementById('validation').value,
-                content: document.getElementById('content').value,
-                timestamp: Date.now()
-            };
-            
-            localStorage.setItem('paste_draft', JSON.stringify(draft));
-        }
-        
-        // 💾 ВОССТАНОВИТЬ ЧЕРНОВИК
-        function restoreDraft() {
-            try {
-                const draft = JSON.parse(localStorage.getItem('paste_draft'));
-                if (draft && Date.now() - draft.timestamp < 86400000) { // 24 часа
-                    document.getElementById('lika').value = draft.lika || '';
-                    document.getElementById('validation').value = draft.validation || '';
-                    document.getElementById('content').value = draft.content || '';
-                    
-                    // Обновить счетчики
-                    ['lika', 'validation', 'content'].forEach(field => {
-                        const input = document.getElementById(field);
-                        const counter = document.getElementById(field + 'Count');
-                        counter.textContent = `${input.value.length}/${field === 'lika' ? 100 : field === 'validation' ? 500 : 2000}`;
-                    });
-                    
-                    showMessage('📋 Восстановлен черновик', 'success');
-                    setTimeout(() => hideMessage(), 2000);
-                }
-            } catch (e) {
-                // ignore
-            }
-        }
-        
-        // 🔍 ПРОВЕРКА ИЗМЕНЕНИЙ
-        function hasUnsavedChanges() {
-            return document.getElementById('lika').value.trim() !== '' ||
-                   document.getElementById('validation').value.trim() !== '' ||
-                   document.getElementById('content').value.trim() !== '';
-        }
-        
-        // 📨 ОТПРАВИТЬ ПАСТУ
-        async function submitPaste() {
-            const lika = document.getElementById('lika').value.trim();
-            const validation = document.getElementById('validation').value.trim();
-            const content = document.getElementById('content').value.trim();
-            
-            // Валидация
-            if (!lika) {
-                showMessage('❌ Введите лику!', 'error');
-                document.getElementById('lika').focus();
-                return;
-            }
-            if (!validation) {
-                showMessage('❌ Введите валидацию!', 'error');
-                document.getElementById('validation').focus();
-                return;
-            }
-            if (!content) {
-                showMessage('❌ Введите пасту!', 'error');
-                document.getElementById('content').focus();
-                return;
-            }
-            
-            // Показать загрузку
-            const originalText = document.querySelector('.btn-submit').textContent;
-            document.querySelector('.btn-submit').textContent = '🔄 Отправка...';
-            document.querySelector('.btn-submit').disabled = true;
-            
-            try {
-                // Загрузить базу
-                const response = await secureFetch(JSONBIN_URL + '/latest', {
-                    headers: { 'X-Master-Key': keys.MASTER_KEY }
-                });
-                
-                const data = await response.json();
+                if (!res.ok) throw new Error();
+                const data = await res.json();
                 const db = data.record;
-                const version = data.metadata.version;
                 
-                // Добавить пасту
+                // ДОБАВЛЕНИЕ
                 db.pastes.push({
                     id: Date.now(),
-                    lika: lika,
-                    validation: validation,
-                    content: content,
-                    author: 'user_' + Math.random().toString(36).substr(2, 8),
-                    status: 'pending',
+                    lika: li,
+                    validation: va,
+                    content: co,
+                    author: 'u_' + Math.random().toString(36).substr(2, 4),
+                    status: d.w,
                     tag: '',
                     date: new Date().toLocaleString('ru-RU')
                 });
                 
-                // Сохранить базу
-                const saveResponse = await secureFetch(JSONBIN_URL, {
+                // СОХРАНЕНИЕ
+                const save = await fetch(`https://api.jsonbin.io/v3/b/${d.i}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Master-Key': keys.MASTER_KEY,
+                        'X-Master-Key': d.k,
                         'X-Bin-Versioning': 'false'
                     },
                     body: JSON.stringify(db)
                 });
                 
-                if (saveResponse.ok) {
-                    // Очистить черновик
-                    localStorage.removeItem('paste_draft');
+                if (save.ok) {
+                    _m('[OK]', true);
                     
-                    // Очистить форму
-                    document.getElementById('lika').value = '';
-                    document.getElementById('validation').value = '';
-                    document.getElementById('content').value = '';
-                    
-                    // Обновить счетчики
-                    ['lika', 'validation', 'content'].forEach(field => {
-                        document.getElementById(field + 'Count').textContent = '0/' + 
-                            (field === 'lika' ? 100 : field === 'validation' ? 500 : 2000);
+                    // ОЧИСТКА
+                    ['li', 'va', 'co'].forEach(id => {
+                        document.getElementById(id).value = '';
                     });
                     
-                    showMessage('✅ Паста отправлена на модерацию!', 'success');
-                    
-                    // Вернуться через 2 секунды
                     setTimeout(() => {
-                        window.location.href = 'index.html';
-                    }, 2000);
-                    
+                        location.href = 'index.html';
+                    }, 1200);
                 } else {
-                    throw new Error('Save failed');
+                    throw new Error();
                 }
                 
-            } catch (error) {
-                console.error('Submit error:', error);
-                showMessage('❌ Ошибка при отправке: ' + error.message, 'error');
-                
-                // Включить кнопку
-                document.querySelector('.btn-submit').textContent = originalText;
-                document.querySelector('.btn-submit').disabled = false;
+            } catch(e) {
+                _m('[FAIL]', false);
+                btn.textContent = old;
+                btn.disabled = false;
             }
         }
         
-        // 💬 ПОКАЗАТЬ СООБЩЕНИЕ
-        function showMessage(text, type = 'error') {
-            const msg = document.getElementById('message');
-            msg.textContent = text;
-            msg.className = 'message ' + (type === 'success' ? 'success' : '');
-            msg.style.display = 'block';
+        // 💬 СООБЩЕНИЕ
+        function _m(txt, ok) {
+            const m = document.getElementById('msg');
+            m.textContent = txt;
+            m.className = 'm' + (ok ? ' ms' : '');
+            m.style.display = 'block';
             
-            if (type === 'success') {
-                setTimeout(hideMessage, 3000);
+            if (ok) {
+                setTimeout(() => m.style.display = 'none', 2500);
             }
         }
         
-        // 💬 СКРЫТЬ СООБЩЕНИЕ
-        function hideMessage() {
-            document.getElementById('message').style.display = 'none';
-        }
-        
-        // ↩️ ВЕРНУТЬСЯ НАЗАД
-        function goBack() {
-            if (hasUnsavedChanges()) {
-                if (confirm('У вас есть несохраненные изменения. Уверены, что хотите уйти?')) {
-                    window.location.href = 'index.html';
-                }
-            } else {
-                window.location.href = 'index.html';
+        // 🛡️ ЗАЩИТА
+        setInterval(() => {
+            if (window.console && console.clear) {
+                console.clear();
             }
-        }
-        
-        // 🎨 СТИЛИ ДЛЯ АНИМАЦИЙ
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes shake {
-                0%, 100% { transform: translateX(0); }
-                10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-                20%, 40%, 60%, 80% { transform: translateX(5px); }
-            }
-        `;
-        document.head.appendChild(style);
-        
-        // 🚀 ЗАПУСК
-        initializeSecurity();
-        
+        }, 300);
     </script>
 </body>
 </html>
