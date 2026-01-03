@@ -66,20 +66,30 @@
 
 <script>
 // 🛡️ ЗАШИФРОВАННЫЕ КЛЮЧИ
-function getConfig() {
-    // BIN_ID: 695879f2ae596e708fc13f57
-    const binParts = [54,57,53,56,55,57,102,50,97,101,53,57,54,101,55,48,56,102,99,49,51,102,53,55];
-    
-    // MASTER_KEY: $2a$10$lM3wHWf5ohE1cJ0K/tn07eVuj7W80ZljxdwJUaND/cBOQdKKxptVC
-    const keyParts = [36,50,97,36,49,48,36,108,77,51,119,72,87,102,53,111,104,69,49,99,74,48,75,47,116,110,48,55,101,86,117,106,55,87,56,48,90,108,106,120,100,119,74,85,97,78,68,47,99,66,79,81,100,75,75,120,112,116,86,67];
-    
-    return {
-        BIN_ID: String.fromCharCode(...binParts),
-        MASTER_KEY: String.fromCharCode(...keyParts)
-    };
+const ENCODED = {
+    a: "Njk1ODc5ZjJhZTU5NmU3MDhmYzEzZjU3", // BIN_ID в base64
+    b: "JDJhJDEwJGxNM25IV2Y1b2hFM1RwZXlyek9QWGVMZ1gzd3V2blFDT1AyRHpKakNQdFlwQlh0cmFmN3dD", // MASTER_KEY в base64
+    c: "MTIyMzMx" // ADMIN_PASS в base64
+};
+
+// 🔓 РАСШИФРОВКА
+function getKeys() {
+    try {
+        return {
+            BIN_ID: atob(ENCODED.a),
+            MASTER_KEY: atob(ENCODED.b),
+            ADMIN_PASS: atob(ENCODED.c)
+        };
+    } catch(e) {
+        return {
+            BIN_ID: "695879f2ae596e708fc13f57",
+            MASTER_KEY: "$2a$10$lM3wHWf5ohE1cJ0K/tn07eVuj7W80ZljxdwJUaND/cBOQdKKxptVC",
+            ADMIN_PASS: "122331"
+        };
+    }
 }
 
-const CONFIG = getConfig();
+const CONFIG = getKeys();
 
 // 📥 ЗАГРУЗИТЬ ПАСТЫ
 async function loadPastes() {
@@ -98,7 +108,7 @@ async function loadPastes() {
         
         if (!response.ok) {
             if (response.status === 404) {
-                container.innerHTML = '<div class="no-pastes" style="color:red">❌ BIN не найден</div>';
+                container.innerHTML = '<div class="no-pastes" style="color:red">❌ База не найдена</div>';
                 return;
             }
             throw new Error(`Ошибка ${response.status}`);
@@ -112,7 +122,7 @@ async function loadPastes() {
     } catch (error) {
         console.error('Ошибка:', error);
         document.getElementById('pastesContainer').innerHTML = 
-            `<div class="no-pastes" style="color:red">❌ ${error.message}</div>`;
+            '<div class="no-pastes" style="color:red">❌ Ошибка загрузки</div>';
     }
 }
 
