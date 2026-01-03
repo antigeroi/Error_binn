@@ -65,23 +65,23 @@
     </div>
 
 <script>
-// 🗝️ ЗАШИФРОВАННЫЕ КЛЮЧИ (base64)
-const SECRET = {
-    id: "Njk1ODc5ZjJhZTU5NmU3MDhmYzEzZjU3",
-    key: "JDJhJDEwJGxNM25IV2Y1b2hFM1RwZXlyek9QWGVMZ1gzd3V2blFDT1AyRHpKakNQdFlwQlh0cmFmN3dD",
-    pass: "MTIyMzMx"
+// 🗝️ ТВОИ КЛЮЧИ (зашифрованы)
+const KEYS = {
+    bin: "Njk1OTFhMjJhZTU5NmU3MDhmYzI0MjIz",
+    master: "JDJhJDEwJGcwVGR4ZFNYVy9IaDlUVWcyRzRoWmV0cGl5Y3pTSFdXSkN5WHF3Yzh5bENZLms1cFVzbVUy",
+    admin: "MTIyMzMx"
 };
 
-// 🔓 ПОЛУЧИТЬ КЛЮЧИ
-function getKeys() {
+// 🔓 РАСШИФРОВКА
+function getConfig() {
     return {
-        BIN_ID: atob(SECRET.id),
-        MASTER_KEY: atob(SECRET.key),
-        ADMIN_PASS: atob(SECRET.pass)
+        BIN_ID: atob(KEYS.bin),
+        MASTER_KEY: atob(KEYS.master),
+        ADMIN_PASS: atob(KEYS.admin)
     };
 }
 
-const CONFIG = getKeys();
+const CONFIG = getConfig();
 
 // 📥 ЗАГРУЗИТЬ ПАСТЫ
 async function loadPastes() {
