@@ -44,23 +44,24 @@
     </div>
 
 <script>
-// 🗝️ ТВОИ КЛЮЧИ
-const KEYS = {
-    bin: "Njk1OTFhMjJhZTU5NmU3MDhmYzI0MjIz",
-    master: "JDJhJDEwJGcwVGR4ZFNYVy9IaDlUVWcyRzRoWmV0cGl5Y3pTSFdXSkN5WHF3Yzh5bENZLms1cFVzbVUy",
-    admin: "MTIyMzMx"
+// 🗝️ ЗАШИФРОВАННЫЕ КЛЮЧИ
+const SECRET_KEYS = {
+    id: "Njk1OTFmNGZkMGVhODgxZjQwNTFiYjJj",
+    key: "JDJhJDEwJGcwVGR4ZFNYVy9IaDlUVWcyRzRoWmV0cGl5Y3pTSFdXSkN5WHF3Yzh5bENZLms1cFVzbVUy",
+    pass: "MTIyMzMx"
 };
 
 // 🔓 РАСШИФРОВКА
 function getConfig() {
     return {
-        BIN_ID: atob(KEYS.bin),
-        MASTER_KEY: atob(KEYS.master),
-        ADMIN_PASS: atob(KEYS.admin)
+        BIN_ID: atob(SECRET_KEYS.id),
+        MASTER_KEY: atob(SECRET_KEYS.key),
+        ADMIN_PASS: atob(SECRET_KEYS.pass)
     };
 }
 
 const CONFIG = getConfig();
+let currentVersion = null;
 
 // 🔐 ПРОВЕРКА ПАРОЛЯ
 function checkAdminPassword() {
@@ -83,10 +84,13 @@ async function loadPendingPastes() {
             headers: { 'X-Master-Key': CONFIG.MASTER_KEY }
         });
         
-        if (!response.ok) throw new Error('Ошибка загрузки');
+        if (!response.ok) {
+            throw new Error('Ошибка загрузки: ' + response.status);
+        }
         
         const data = await response.json();
         const db = data.record;
+        currentVersion = data.metadata.version;
         
         const pending = db.pastes.filter(p => p.status === 'pending');
         
@@ -129,73 +133,101 @@ async function loadPendingPastes() {
         
     } catch (error) {
         document.getElementById('pendingContainer').innerHTML = 
-            '<div style="text-align:center;padding:50px;color:red">❌ Ошибка загрузки</div>';
+            `<div style="text-align:center;padding:50px;color:red">❌ ${error.message}</div>`;
     }
 }
 
 // ✅ ОДОБРИТЬ ПАСТУ
 async function approvePaste(id, addFame) {
-    if (!confirm(addFame ? 'Одобрить с тегом #фейм?' : 'Одобрить пасту?')) return;
+    if (!confirm(`Одобрить пасту #${id}${addFame ? ' с тегом #фейм' : ''}?`)) return;
     
     try {
         const response = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`, {
             headers: { 'X-Master-Key': CONFIG.MASTER_KEY }
         });
         
+        if (!response.ok) throw new Error('Ошибка загрузки');
         const data = await response.json();
         const db = data.record;
+        
+        if (data.metadata.version !== currentVersion) {
+            alert('База обновилась! Обнови страницу.');
+            return;
+        }
         
         const paste = db.pastes.find(p => p.id === id);
         if (paste) {
             paste.status = 'approved';
-            if (addFame) paste.tag = '#фейм';
+            if (addFame) {
+                paste.tag = '#фейм';
+            }
         }
         
-        await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`, {
+        const saveResponse = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Master-Key': CONFIG.MASTER_KEY
+                'X-Master-Key': CONFIG.MASTER_KEY,
+                'X-Bin-Versioning': 'false'
             },
             body: JSON.stringify(db)
         });
         
-        document.getElementById(`paste-${id}`).remove();
-        alert('✅ Паста одобрена!');
-        
+        if (saveResponse.ok) {
+            document.getElementById(`paste-${id}`).remove();
+            alert('✅ Паста одобрена!');
+            currentVersion = (await saveResponse.json()).metadata.version;
+        } else {
+            throw new Error('Ошибка сохранения');
+        }
     } catch (error) {
+        console.error('Approve error:', error);
         alert('❌ Ошибка!');
     }
 }
 
 // ❌ ОТКЛОНИТЬ ПАСТУ
 async function rejectPaste(id) {
-    if (!confirm('Отклонить пасту?')) return;
+    if (!confirm(`Отклонить пасту #${id}?`)) return;
     
     try {
         const response = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`, {
             headers: { 'X-Master-Key': CONFIG.MASTER_KEY }
         });
         
+        if (!response.ok) throw new Error('Ошибка загрузки');
         const data = await response.json();
         const db = data.record;
         
-        const paste = db.pastes.find(p => p.id === id);
-        if (paste) paste.status = 'rejected';
+        if (data.metadata.version !== currentVersion) {
+            alert('База обновилась! Обнови страницу.');
+            return;
+        }
         
-        await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`, {
+        const paste = db.pastes.find(p => p.id === id);
+        if (paste) {
+            paste.status = 'rejected';
+        }
+        
+        const saveResponse = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Master-Key': CONFIG.MASTER_KEY
+                'X-Master-Key': CONFIG.MASTER_KEY,
+                'X-Bin-Versioning': 'false'
             },
             body: JSON.stringify(db)
         });
         
-        document.getElementById(`paste-${id}`).remove();
-        alert('❌ Паста отклонена!');
-        
+        if (saveResponse.ok) {
+            document.getElementById(`paste-${id}`).remove();
+            alert('❌ Паста отклонена!');
+            currentVersion = (await saveResponse.json()).metadata.version;
+        } else {
+            throw new Error('Ошибка сохранения');
+        }
     } catch (error) {
+        console.error('Reject error:', error);
         alert('❌ Ошибка!');
     }
 }
