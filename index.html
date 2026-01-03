@@ -80,24 +80,15 @@
     </div>
 
     <script>
-        // 🔐 ЗАШИФРОВАННЫЕ КЛЮЧИ (Base64 + сдвиг)
-        const ENCRYPTED_BIN_ID = 'Njk1OTFmNGZkMGVhODgxZjQwNTFiYjJj';
-        const ENCRYPTED_MASTER_KEY = 'JDJhJDEwJGcwVGR4ZFNZVy9IaDlUVWcyRzRoWmV0cGl5Y3pTSFdXSkN5WHF3Yzh5bENZLms1cFVzbVUy';
-        const ENCRYPTED_ADMIN_PASS = 'MTIyMzMx';
+        // 🔐 ЗАШИФРОВАННЫЕ КЛЮЧИ (Base64)
+        const ENCRYPTED_BIN_ID = 'Njk1OTFmNGZkMGVhODgxZjQwNTFiYjJj'; // 69591f4fd0ea881f4051bb2c
+        const ENCRYPTED_MASTER_KEY = 'JDJhJDEwJGcwVGR4ZFNZVy9IaDlUVWcyRzRoWmV0cGl5Y3pTSFdXSkN5WHF3Yzh5bENZLms1cFVzbVUy'; // $2a$10$g0TdxdSYW/Hh9TUg2G4hZetpiyczSHWWJCyXqwc8ylCY.k5pUsmU2
+        const ENCRYPTED_ADMIN_PASS = 'MTIyMzMx'; // 122331
         
-        // 🔓 ФУНКЦИЯ ДЕШИФРОВКИ
+        // 🔓 ПРАВИЛЬНАЯ ДЕШИФРОВКА (Base64)
         function decryptData(encrypted) {
             try {
-                // 1. Декодируем из Base64
-                let decoded = atob(encrypted);
-                
-                // 2. Обратный сдвиг символов (был +3, теперь -3)
-                let result = '';
-                for (let i = 0; i < decoded.length; i++) {
-                    result += String.fromCharCode(decoded.charCodeAt(i) - 3);
-                }
-                
-                return result;
+                return atob(encrypted); // Просто декодируем Base64
             } catch (e) {
                 console.error('Decryption error:', e);
                 return '';
@@ -115,6 +106,9 @@
         
         const config = getConfig();
         const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${config.BIN_ID}`;
+        
+        // ДЛЯ ОТЛАДКИ - проверь в консоли
+        console.log('🔑 Декодированные ключи:', config);
         
         // ПОКАЗАТЬ СООБЩЕНИЕ
         function showMessage(text, type = 'error') {
@@ -143,7 +137,7 @@
                 const data = await response.json();
                 return data.record;
             } catch (error) {
-                console.error('Ошибка:', error);
+                console.error('Ошибка загрузки базы:', error);
                 showMessage('Ошибка загрузки базы');
                 return { pastes: [], users: [] };
             }
